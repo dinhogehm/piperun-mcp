@@ -1,0 +1,326 @@
+{
+  "schema_version": "v1",
+  "name": "PipeRun MCP",
+  "description": "Ferramentas para interagir com o CRM PipeRun através da API.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "",
+    "tools": [
+      {
+        "name": "listar_empresas",
+        "description": "Lista as empresas cadastradas no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Termo para busca por nome da empresa."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Número da página para paginação."
+            },
+            "per_page": {
+              "type": "integer",
+              "description": "Quantidade de itens por página."
+            },
+            "order_by": {
+              "type": "string",
+              "description": "Campo para ordenação (ex: name, created_at)."
+            },
+            "order_type": {
+              "type": "string",
+              "description": "Tipo de ordenação (asc ou desc)."
+            }
+          }
+        }
+      },
+      {
+        "name": "get_company",
+        "description": "Obtém detalhes de uma empresa específica no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "company_id": {
+              "type": "integer",
+              "description": "ID da empresa a ser consultada."
+            }
+          },
+          "required": ["company_id"]
+        }
+      },
+      {
+        "name": "criar_empresa",
+        "description": "Cria uma nova empresa no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Nome da empresa."
+            },
+            "email": {
+              "type": "string",
+              "description": "Email da empresa."
+            },
+            "phone": {
+              "type": "string",
+              "description": "Telefone da empresa."
+            },
+            "website": {
+              "type": "string",
+              "description": "Site da empresa."
+            },
+            "address": {
+              "type": "string",
+              "description": "Endereço da empresa."
+            }
+          },
+          "required": ["name"]
+        }
+      },
+      {
+        "name": "listar_contatos",
+        "description": "Lista os contatos cadastrados no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Termo para busca por nome do contato."
+            },
+            "company_id": {
+              "type": "integer",
+              "description": "Filtrar contatos por ID da empresa."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Número da página para paginação."
+            },
+            "per_page": {
+              "type": "integer",
+              "description": "Quantidade de itens por página."
+            },
+            "order_by": {
+              "type": "string",
+              "description": "Campo para ordenação."
+            },
+            "order_type": {
+              "type": "string",
+              "description": "Tipo de ordenação (asc ou desc)."
+            }
+          }
+        }
+      },
+      {
+        "name": "criar_contato",
+        "description": "Cria um novo contato no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Nome do contato."
+            },
+            "email": {
+              "type": "string",
+              "description": "Email do contato."
+            },
+            "company_id": {
+              "type": "integer",
+              "description": "ID da empresa do contato."
+            },
+            "phone": {
+              "type": "string",
+              "description": "Telefone do contato."
+            },
+            "mobile_phone": {
+              "type": "string",
+              "description": "Celular do contato."
+            },
+            "position": {
+              "type": "string",
+              "description": "Cargo do contato."
+            }
+          },
+          "required": ["name"]
+        }
+      },
+      {
+        "name": "listar_oportunidades",
+        "description": "Lista as oportunidades/negócios cadastrados no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Termo para busca por título da oportunidade."
+            },
+            "company_id": {
+              "type": "integer",
+              "description": "Filtrar por ID da empresa."
+            },
+            "person_id": {
+              "type": "integer",
+              "description": "Filtrar por ID do contato."
+            },
+            "pipeline_id": {
+              "type": "integer",
+              "description": "Filtrar por ID do funil."
+            },
+            "stage_id": {
+              "type": "integer",
+              "description": "Filtrar por ID da etapa do funil."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Número da página para paginação."
+            },
+            "per_page": {
+              "type": "integer",
+              "description": "Quantidade de itens por página."
+            }
+          }
+        }
+      },
+      {
+        "name": "criar_oportunidade",
+        "description": "Cria uma nova oportunidade/negócio no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Título da oportunidade."
+            },
+            "pipeline_id": {
+              "type": "integer",
+              "description": "ID do funil da oportunidade."
+            },
+            "stage_id": {
+              "type": "integer",
+              "description": "ID da etapa do funil da oportunidade."
+            },
+            "company_id": {
+              "type": "integer",
+              "description": "ID da empresa relacionada."
+            },
+            "person_id": {
+              "type": "integer",
+              "description": "ID do contato relacionado."
+            },
+            "value": {
+              "type": "number",
+              "description": "Valor da oportunidade."
+            },
+            "forecast_date": {
+              "type": "string",
+              "description": "Data prevista para fechamento (formato: YYYY-MM-DD)."
+            }
+          },
+          "required": ["title", "pipeline_id", "stage_id"]
+        }
+      },
+      {
+        "name": "listar_funis",
+        "description": "Lista os funis de vendas no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "Número da página para paginação."
+            },
+            "per_page": {
+              "type": "integer",
+              "description": "Quantidade de itens por página."
+            }
+          }
+        }
+      },
+      {
+        "name": "listar_etapas_funil",
+        "description": "Lista as etapas de um funil específico no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "pipeline_id": {
+              "type": "integer",
+              "description": "ID do funil para filtrar etapas."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Número da página para paginação."
+            },
+            "per_page": {
+              "type": "integer",
+              "description": "Quantidade de itens por página."
+            }
+          },
+          "required": ["pipeline_id"]
+        }
+      },
+      {
+        "name": "listar_campos_customizados",
+        "description": "Lista os campos customizados no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "entity_type": {
+              "type": "string",
+              "description": "Tipo da entidade (deals, companies, persons, etc.)."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Número da página para paginação."
+            },
+            "per_page": {
+              "type": "integer",
+              "description": "Quantidade de itens por página."
+            }
+          }
+        }
+      },
+      {
+        "name": "listar_produtos",
+        "description": "Lista os produtos cadastrados no PipeRun.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Termo para busca por nome do produto."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Número da página para paginação."
+            },
+            "per_page": {
+              "type": "integer",
+              "description": "Quantidade de itens por página."
+            }
+          }
+        }
+      }
+    ]
+  },
+  "tool_execution": {
+    "type": "remote",
+    "command": "python {tool_config_dir}/exemplo_claude.py \"{tool_name}\" '{tool_params}'",
+    "args": {
+      "tool_config_dir": "{tool_config_dir}",
+      "tool_name": "{tool_name}",
+      "tool_params": "{tool_params}"
+    }
+  },
+  "setup": {
+    "instructions": [
+      "1. Certifique-se de ter o Python 3.8+ instalado",
+      "2. Instale as dependências com: pip install -r requirements.txt",
+      "3. Configure o arquivo .env com seu token de API do PipeRun (PIPERUN_API_TOKEN=seu_token)"
+    ]
+  }
+}
