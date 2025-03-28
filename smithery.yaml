@@ -3,9 +3,28 @@ displayName: PipeRun MCP
 description: Ferramentas para integração com a API do PipeRun
 version: 0.1.0
 
-server:
-  type: jsonrpc
-  path: /jsonrpc
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      apiToken:
+        type: string
+        description: "Token de API do PipeRun"
+    required: ["apiToken"]
+  commandFunction: |
+    function generateCommand(config) {
+      return {
+        command: "python",
+        args: ["server.py"],
+        env: {
+          PIPERUN_API_TOKEN: config.apiToken
+        }
+      };
+    }
+
+build:
+  dockerfile: Dockerfile
 
 tools:
   - name: listar_empresas
@@ -38,7 +57,7 @@ tools:
         phone:
           type: string
           description: Telefone da empresa
-      required: [name]
+      required: ["name"]
   
   - name: listar_contatos
     description: Lista os contatos cadastrados no PipeRun
@@ -76,7 +95,7 @@ tools:
         phone:
           type: string
           description: Telefone do contato
-      required: [name]
+      required: ["name"]
   
   - name: listar_oportunidades
     description: Lista as oportunidades/negócios cadastrados no PipeRun
@@ -114,7 +133,7 @@ tools:
         value:
           type: number
           description: Valor da oportunidade
-      required: [title, pipeline_id, stage_id]
+      required: ["title", "pipeline_id", "stage_id"]
   
   - name: listar_funis
     description: Lista os funis de vendas no PipeRun
@@ -137,7 +156,7 @@ tools:
         pipeline_id:
           type: integer
           description: ID do funil para filtrar etapas
-      required: [pipeline_id]
+      required: ["pipeline_id"]
   
   - name: listar_campos_customizados
     description: Lista os campos customizados no PipeRun
@@ -158,11 +177,3 @@ tools:
           type: string
           description: Termo para busca por nome do produto
       required: []
-
-build:
-  dockerfile: Dockerfile
-
-env:
-  - name: PIPERUN_API_TOKEN
-    description: Token de API do PipeRun
-    required: true
