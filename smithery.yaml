@@ -1,174 +1,168 @@
 name: piperun-mcp
-display_name: PipeRun MCP
+displayName: PipeRun MCP
 description: Ferramentas para integração com a API do PipeRun
 version: 0.1.0
 
-build:
-  type: docker
+server:
+  type: jsonrpc
+  path: /jsonrpc
 
-run:
-  command: python server.py
-  port: 8000
-  environment:
-    - name: PIPERUN_API_TOKEN
-      description: Token de API do PipeRun
-      required: true
-
-tool_list:
+tools:
   - name: listar_empresas
-    display_name: Listar Empresas
     description: Lista as empresas cadastradas no PipeRun
-    parameters:
-      - name: search
-        type: string
-        description: Termo para busca por nome da empresa
-        required: false
-      - name: page
-        type: integer
-        description: Número da página para paginação
-        required: false
-      - name: per_page
-        type: integer
-        description: Quantidade de itens por página
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        search:
+          type: string
+          description: Termo para busca por nome da empresa
+        page:
+          type: integer
+          description: Número da página para paginação
+        per_page:
+          type: integer
+          description: Quantidade de itens por página
+      required: []
   
   - name: criar_empresa
-    display_name: Criar Empresa
     description: Cria uma nova empresa no PipeRun
-    parameters:
-      - name: name
-        type: string
-        description: Nome da empresa
-        required: true
-      - name: email
-        type: string
-        description: Email da empresa
-        required: false
-      - name: phone
-        type: string
-        description: Telefone da empresa
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nome da empresa
+        email:
+          type: string
+          description: Email da empresa
+        phone:
+          type: string
+          description: Telefone da empresa
+      required: [name]
   
   - name: listar_contatos
-    display_name: Listar Contatos
     description: Lista os contatos cadastrados no PipeRun
-    parameters:
-      - name: search
-        type: string
-        description: Termo para busca por nome do contato
-        required: false
-      - name: company_id
-        type: integer
-        description: Filtrar contatos por ID da empresa
-        required: false
-      - name: page
-        type: integer
-        description: Número da página para paginação
-        required: false
-      - name: per_page
-        type: integer
-        description: Quantidade de itens por página
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        search:
+          type: string
+          description: Termo para busca por nome do contato
+        company_id:
+          type: integer
+          description: Filtrar contatos por ID da empresa
+        page:
+          type: integer
+          description: Número da página para paginação
+        per_page:
+          type: integer
+          description: Quantidade de itens por página
+      required: []
   
   - name: criar_contato
-    display_name: Criar Contato
     description: Cria um novo contato no PipeRun
-    parameters:
-      - name: name
-        type: string
-        description: Nome do contato
-        required: true
-      - name: email
-        type: string
-        description: Email do contato
-        required: false
-      - name: company_id
-        type: integer
-        description: ID da empresa do contato
-        required: false
-      - name: phone
-        type: string
-        description: Telefone do contato
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nome do contato
+        email:
+          type: string
+          description: Email do contato
+        company_id:
+          type: integer
+          description: ID da empresa do contato
+        phone:
+          type: string
+          description: Telefone do contato
+      required: [name]
   
   - name: listar_oportunidades
-    display_name: Listar Oportunidades
     description: Lista as oportunidades/negócios cadastrados no PipeRun
-    parameters:
-      - name: search
-        type: string
-        description: Termo para busca por título da oportunidade
-        required: false
-      - name: pipeline_id
-        type: integer
-        description: Filtrar por ID do funil
-        required: false
-      - name: stage_id
-        type: integer
-        description: Filtrar por ID da etapa do funil
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        search:
+          type: string
+          description: Termo para busca por título da oportunidade
+        pipeline_id:
+          type: integer
+          description: Filtrar por ID do funil
+        stage_id:
+          type: integer
+          description: Filtrar por ID da etapa do funil
+      required: []
   
   - name: criar_oportunidade
-    display_name: Criar Oportunidade
     description: Cria uma nova oportunidade/negócio no PipeRun
-    parameters:
-      - name: title
-        type: string
-        description: Título da oportunidade
-        required: true
-      - name: pipeline_id
-        type: integer
-        description: ID do funil da oportunidade
-        required: true
-      - name: stage_id
-        type: integer
-        description: ID da etapa do funil da oportunidade
-        required: true
-      - name: company_id
-        type: integer
-        description: ID da empresa relacionada
-        required: false
-      - name: value
-        type: number
-        description: Valor da oportunidade
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Título da oportunidade
+        pipeline_id:
+          type: integer
+          description: ID do funil da oportunidade
+        stage_id:
+          type: integer
+          description: ID da etapa do funil da oportunidade
+        company_id:
+          type: integer
+          description: ID da empresa relacionada
+        value:
+          type: number
+          description: Valor da oportunidade
+      required: [title, pipeline_id, stage_id]
   
   - name: listar_funis
-    display_name: Listar Funis
     description: Lista os funis de vendas no PipeRun
-    parameters:
-      - name: page
-        type: integer
-        description: Número da página para paginação
-        required: false
-      - name: per_page
-        type: integer
-        description: Quantidade de itens por página
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Número da página para paginação
+        per_page:
+          type: integer
+          description: Quantidade de itens por página
+      required: []
   
   - name: listar_etapas_funil
-    display_name: Listar Etapas do Funil
     description: Lista as etapas de um funil específico no PipeRun
-    parameters:
-      - name: pipeline_id
-        type: integer
-        description: ID do funil para filtrar etapas
-        required: true
+    inputSchema:
+      type: object
+      properties:
+        pipeline_id:
+          type: integer
+          description: ID do funil para filtrar etapas
+      required: [pipeline_id]
   
   - name: listar_campos_customizados
-    display_name: Listar Campos Customizados
     description: Lista os campos customizados no PipeRun
-    parameters:
-      - name: entity_type
-        type: string
-        description: Tipo da entidade (deals, companies, persons, etc.)
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        entity_type:
+          type: string
+          description: Tipo da entidade (deals, companies, persons, etc.)
+      required: []
   
   - name: listar_produtos
-    display_name: Listar Produtos
     description: Lista os produtos cadastrados no PipeRun
-    parameters:
-      - name: search
-        type: string
-        description: Termo para busca por nome do produto
-        required: false
+    inputSchema:
+      type: object
+      properties:
+        search:
+          type: string
+          description: Termo para busca por nome do produto
+      required: []
+
+build:
+  dockerfile: Dockerfile
+
+env:
+  - name: PIPERUN_API_TOKEN
+    description: Token de API do PipeRun
+    required: true
