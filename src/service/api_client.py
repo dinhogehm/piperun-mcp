@@ -37,35 +37,39 @@ class PipeRunApiClient:
     
     def _handle_response(self, response: requests.Response) -> Dict:
         """
-        Processa a resposta da API e trata erros.
+        Processa a resposta da API e verifica erros.
         
         Args:
             response (requests.Response): Resposta da requisição.
             
         Returns:
-            Dict: Resposta processada como dicionário.
+            Dict: Conteúdo da resposta como dicionário.
             
         Raises:
-            ValueError: Se a resposta contiver erro.
+            ValueError: Se a resposta contém erros.
         """
         try:
-            response.raise_for_status()
-            return response.json()
-        except RequestException as e:
-            logger.error(f"Erro na requisição: {str(e)}")
-            error_message = "Erro de conexão com a API"
+            logger.info(f"Corpo da resposta: {response.text}")
             
-            if response.text:
-                try:
-                    error_data = response.json()
-                    if "error" in error_data:
-                        error_message = f"Erro da API: {error_data['error']}"
-                    elif "message" in error_data:
-                        error_message = f"Erro da API: {error_data['message']}"
-                except json.JSONDecodeError:
-                    error_message = f"Erro da API: {response.text}"
+            data = response.json()
+            logger.info(f"Dados JSON da resposta: {data}")
             
-            raise ValueError(f"{error_message} (Status: {response.status_code})")
+            if not response.ok:
+                error_msg = data.get("error", {}).get("message", "Erro desconhecido")
+                logger.error(f"Erro na API: {error_msg}")
+                raise ValueError(f"Erro na API do PipeRun: {error_msg}")
+            
+            if data.get("success") is False:  # Verifica explicitamente se success é False
+                error_msg = data.get("message", "Erro desconhecido")
+                logger.error(f"Operação não teve sucesso: {error_msg}")
+                raise ValueError(f"Operação não teve sucesso: {error_msg}")
+            
+            # Retorna o objeto de resposta completo, mantendo a estrutura original
+            return data
+            
+        except json.JSONDecodeError:
+            logger.error(f"Erro ao decodificar JSON: {response.text}")
+            raise ValueError(f"Resposta inválida da API: {response.text}")
     
     def get(self, endpoint: str, params: Optional[Dict] = None) -> Dict:
         """
@@ -80,6 +84,8 @@ class PipeRunApiClient:
         """
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         logger.info(f"GET {url}")
+        logger.info(f"Headers: {self.headers}")
+        logger.info(f"Params: {params}")
         
         try:
             response = requests.get(
@@ -88,6 +94,8 @@ class PipeRunApiClient:
                 params=params, 
                 timeout=Config.DEFAULT_TIMEOUT
             )
+            logger.info(f"URL completa: {response.request.url}")
+            logger.info(f"Status: {response.status_code}")
             return self._handle_response(response)
         except Exception as e:
             logger.error(f"Erro na requisição GET para {url}: {str(e)}")

@@ -13,7 +13,7 @@ def list_stages(
     search: Optional[str] = None,
     active: Optional[bool] = None,
     page: Optional[int] = None,
-    per_page: Optional[int] = None,
+    show: Optional[int] = None,
     order_by: Optional[str] = None,
     order_type: Optional[str] = None,
     api_token: Optional[str] = None
@@ -26,7 +26,7 @@ def list_stages(
         search (Optional[str]): Termo para busca por nome da etapa do funil.
         active (Optional[bool]): Filtrar por status de ativação.
         page (Optional[int]): Número da página para paginação.
-        per_page (Optional[int]): Quantidade de itens por página.
+        show (Optional[int]): Quantidade de itens por página.
         order_by (Optional[str]): Campo para ordenação.
         order_type (Optional[str]): Tipo de ordenação (asc ou desc).
         api_token (Optional[str]): Token de API do PipeRun.
@@ -34,8 +34,7 @@ def list_stages(
     Returns:
         Dict[str, Any]: Lista de etapas do funil e metadados.
     """
-    client = PipeRunApiClient(api_token=api_token)
-    
+    # Configurar parâmetros da requisição
     params = {}
     if pipeline_id:
         params["pipeline_id"] = pipeline_id
@@ -45,25 +44,61 @@ def list_stages(
         params["active"] = 1 if active else 0
     if page:
         params["page"] = page
-    if per_page:
-        params["per_page"] = per_page
+    if show:
+        params["show"] = show
     if order_by:
         params["order_by"] = order_by
     if order_type:
         params["order_type"] = order_type
     
+    # Realizar a requisição HTTP diretamente usando requests
+    import requests
+    import logging
+    from ..config import Config
+    
+    logger = logging.getLogger(__name__)
+    
+    # Obter token de API
+    token = api_token or Config.get_api_token()
+    
+    # Configurar URL e headers
+    url = f"{Config.BASE_URL}/stages"
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Token": token
+    }
+    
     try:
-        response = client.get("stages", params=params)
+        # Fazer a requisição GET
+        logger.info(f"Fazendo requisição GET para {url} com params={params}")
+        response = requests.get(url, headers=headers, params=params, timeout=30)
         
+        # Verificar se a resposta é válida
+        if response.status_code != 200:
+            logger.error(f"Erro na requisição: Status {response.status_code}")
+            return {
+                "success": False,
+                "message": f"Erro na requisição: Status {response.status_code}",
+                "items": []
+            }
+        
+        # Processar a resposta
+        data = response.json()
+        logger.info(f"Resposta da API: {data}")
+        
+        # Retornar no formato esperado
         return {
             "success": True,
-            "items": response.get("items", []),
-            "pagination": response.get("pagination", {})
+            "items": data.get("data", []),
+            "pagination": data.get("meta", {})
         }
-    except ValueError as e:
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar etapas do funil: {str(e)}")
         return {
             "success": False,
-            "message": str(e),
+            "message": f"Erro ao listar etapas do funil: {str(e)}",
             "items": []
         }
 

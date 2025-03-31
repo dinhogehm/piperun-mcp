@@ -105,9 +105,11 @@ TOOLS_METADATA = {
         "parameters": {
             "search": {"type": "string", "description": "Termo para busca por nome da empresa"},
             "page": {"type": "integer", "description": "Número da página"},
-            "per_page": {"type": "integer", "description": "Itens por página"},
+            "show": {"type": "integer", "description": "Itens por página"},
             "order_by": {"type": "string", "description": "Campo para ordenação"},
-            "order_type": {"type": "string", "description": "Tipo de ordenação (asc/desc)"}
+            "order_type": {"type": "string", "description": "Tipo de ordenação (asc/desc)"},
+            "status": {"type": "boolean", "description": "Status da empresa (true para ativo, false para inativo)"},
+            "account_id": {"type": "integer", "description": "ID da conta à qual as empresas pertencem"}
         }
     },
     "criar_empresa": {
@@ -121,6 +123,13 @@ TOOLS_METADATA = {
             "address": {"type": "string", "description": "Endereço da empresa"}
         }
     },
+    "consultar_empresa": {
+        "function": get_company,
+        "description": "Consulta uma empresa específica pelo ID",
+        "parameters": {
+            "company_id": {"type": "integer", "description": "ID da empresa a ser consultada", "required": True}
+        }
+    },
     "listar_contatos": {
         "function": list_contacts,
         "description": "Lista os contatos cadastrados no PipeRun",
@@ -128,7 +137,7 @@ TOOLS_METADATA = {
             "search": {"type": "string", "description": "Termo para busca por nome do contato"},
             "company_id": {"type": "integer", "description": "ID da empresa relacionada"},
             "page": {"type": "integer", "description": "Número da página"},
-            "per_page": {"type": "integer", "description": "Itens por página"}
+            "show": {"type": "integer", "description": "Itens por página"}
         }
     },
     "criar_contato": {
@@ -153,7 +162,7 @@ TOOLS_METADATA = {
             "pipeline_id": {"type": "integer", "description": "ID do funil"},
             "stage_id": {"type": "integer", "description": "ID da etapa do funil"},
             "page": {"type": "integer", "description": "Número da página"},
-            "per_page": {"type": "integer", "description": "Itens por página"}
+            "show": {"type": "integer", "description": "Itens por página"}
         }
     },
     "criar_oportunidade": {
@@ -174,7 +183,7 @@ TOOLS_METADATA = {
         "description": "Lista os funis de vendas no PipeRun",
         "parameters": {
             "page": {"type": "integer", "description": "Número da página"},
-            "per_page": {"type": "integer", "description": "Itens por página"}
+            "show": {"type": "integer", "description": "Itens por página"}
         }
     },
     "listar_etapas_funil": {
@@ -183,7 +192,7 @@ TOOLS_METADATA = {
         "parameters": {
             "pipeline_id": {"type": "integer", "description": "ID do funil", "required": True},
             "page": {"type": "integer", "description": "Número da página"},
-            "per_page": {"type": "integer", "description": "Itens por página"}
+            "show": {"type": "integer", "description": "Itens por página"}
         }
     },
     "listar_campos_customizados": {
@@ -192,7 +201,7 @@ TOOLS_METADATA = {
         "parameters": {
             "entity_type": {"type": "string", "description": "Tipo da entidade"},
             "page": {"type": "integer", "description": "Número da página"},
-            "per_page": {"type": "integer", "description": "Itens por página"}
+            "show": {"type": "integer", "description": "Itens por página"}
         }
     },
     "listar_produtos": {
@@ -201,7 +210,7 @@ TOOLS_METADATA = {
         "parameters": {
             "search": {"type": "string", "description": "Termo para busca por nome do produto"},
             "page": {"type": "integer", "description": "Número da página"},
-            "per_page": {"type": "integer", "description": "Itens por página"}
+            "show": {"type": "integer", "description": "Itens por página"}
         }
     }
 }
@@ -283,9 +292,15 @@ def mcp_run_tool(**kwargs) -> Dict[str, Any]:
         }
 
 # Rota para receber requisições JSON-RPC
-@app.route("/jsonrpc", methods=["POST"])
+@app.route("/jsonrpc", methods=["POST", "GET"])
 def handle_jsonrpc():
     """Manipula requisições JSON-RPC."""
+    if request.method == "GET":
+        return jsonify({
+            "message": "Este endpoint JSON-RPC só aceita requisições POST.",
+            "exemplo": "Use curl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\": \"2.0\", \"method\": \"mcp_list_tools\", \"params\": {}, \"id\": 1}' http://localhost:8000/jsonrpc"
+        })
+    
     response = JSONRPCResponseManager.handle(request.data, dispatcher)
     return jsonify(response.data)
 
