@@ -7,9 +7,11 @@ import os
 import json
 import logging
 from typing import Dict, Any, List, Optional
+from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from jsonrpc import JSONRPCResponseManager, dispatcher
+import time
 
 # Configuração de logging
 logging.basicConfig(
@@ -91,49 +93,53 @@ from src.tools import (
     get_product,
     create_product,
     update_product,
-    delete_product
+    delete_product,
+    
+    # Relatórios e estatísticas
+    export_companies_csv,
+    export_contacts_csv,
+    get_pipeline_statistics,
+    generate_sales_summary,
+    
+    # Diagnóstico do servidor MCP
+    get_server_health,
+    get_diagnostics,
+    reset_metrics,
+    check_api_connection,
+    track_request,
+    track_tool_execution,
+    track_error
 )
 
-# Importa a interface REST para ferramentas
-from src.tools_interface import tools_bp, register_tools
+# Importa a configuração MCP
+from src.mcp_config import mcp_config
+
+# Importa as interfaces REST
+from src.tools_interface import tools_bp, mcp_bp, register_tools, run_tool
 
 # Inicializa a aplicação Flask
 app = Flask(__name__)
 
-# Registra o blueprint da interface REST
+# Registra os blueprints para as rotas REST
 app.register_blueprint(tools_bp)
+app.register_blueprint(mcp_bp)
 
-# Define as ferramentas e suas descrições para o MCP
+# Dicionário com metadados das ferramentas para JSON-RPC
 TOOLS_METADATA = {
     "listar_empresas": {
         "function": list_companies,
         "description": "Lista as empresas cadastradas no PipeRun",
         "parameters": {
             "search": {"type": "string", "description": "Termo para busca por nome da empresa"},
-            "page": {"type": "integer", "description": "Número da página"},
-            "show": {"type": "integer", "description": "Itens por página"},
-            "order_by": {"type": "string", "description": "Campo para ordenação"},
-            "order_type": {"type": "string", "description": "Tipo de ordenação (asc/desc)"},
-            "status": {"type": "boolean", "description": "Status da empresa (true para ativo, false para inativo)"},
-            "account_id": {"type": "integer", "description": "ID da conta à qual as empresas pertencem"}
+            "page": {"type": "integer", "description": "Número da página para paginação"},
+            "show": {"type": "integer", "description": "Quantidade de itens por página"}
         }
     },
-    "criar_empresa": {
-        "function": create_company,
-        "description": "Cria uma nova empresa no PipeRun",
-        "parameters": {
-            "name": {"type": "string", "description": "Nome da empresa", "required": True},
-            "email": {"type": "string", "description": "Email da empresa"},
-            "phone": {"type": "string", "description": "Telefone da empresa"},
-            "website": {"type": "string", "description": "Site da empresa"},
-            "address": {"type": "string", "description": "Endereço da empresa"}
-        }
-    },
-    "consultar_empresa": {
+    "obter_empresa": {
         "function": get_company,
-        "description": "Consulta uma empresa específica pelo ID",
+        "description": "Obtém detalhes de uma empresa específica",
         "parameters": {
-            "company_id": {"type": "integer", "description": "ID da empresa a ser consultada", "required": True}
+            "company_id": {"type": "integer", "description": "ID da empresa", "required": True}
         }
     },
     "listar_contatos": {
@@ -141,55 +147,37 @@ TOOLS_METADATA = {
         "description": "Lista os contatos cadastrados no PipeRun",
         "parameters": {
             "search": {"type": "string", "description": "Termo para busca por nome do contato"},
-            "company_id": {"type": "integer", "description": "ID da empresa relacionada"},
-            "page": {"type": "integer", "description": "Número da página"},
-            "show": {"type": "integer", "description": "Itens por página"}
+            "company_id": {"type": "integer", "description": "Filtrar contatos por ID da empresa"},
+            "page": {"type": "integer", "description": "Número da página para paginação"},
+            "show": {"type": "integer", "description": "Quantidade de itens por página"}
         }
     },
-    "criar_contato": {
-        "function": create_contact,
-        "description": "Cria um novo contato no PipeRun",
+    "obter_contato": {
+        "function": get_contact,
+        "description": "Obtém detalhes de um contato específico",
         "parameters": {
-            "name": {"type": "string", "description": "Nome do contato", "required": True},
-            "email": {"type": "string", "description": "Email do contato"},
-            "company_id": {"type": "integer", "description": "ID da empresa do contato"},
-            "phone": {"type": "string", "description": "Telefone do contato"},
-            "mobile_phone": {"type": "string", "description": "Celular do contato"},
-            "position": {"type": "string", "description": "Cargo do contato"}
+            "contact_id": {"type": "integer", "description": "ID do contato", "required": True}
         }
     },
-    "listar_oportunidades": {
+    "listar_negocios": {
         "function": list_deals,
-        "description": "Lista as oportunidades/negócios cadastrados no PipeRun",
+        "description": "Lista os negócios/oportunidades cadastrados no PipeRun",
         "parameters": {
-            "search": {"type": "string", "description": "Termo para busca por título"},
-            "company_id": {"type": "integer", "description": "ID da empresa"},
-            "person_id": {"type": "integer", "description": "ID do contato"},
-            "pipeline_id": {"type": "integer", "description": "ID do funil"},
-            "stage_id": {"type": "integer", "description": "ID da etapa do funil"},
-            "page": {"type": "integer", "description": "Número da página"},
-            "show": {"type": "integer", "description": "Itens por página"}
-        }
-    },
-    "criar_oportunidade": {
-        "function": create_deal,
-        "description": "Cria uma nova oportunidade/negócio no PipeRun",
-        "parameters": {
-            "title": {"type": "string", "description": "Título da oportunidade", "required": True},
-            "pipeline_id": {"type": "integer", "description": "ID do funil", "required": True},
-            "stage_id": {"type": "integer", "description": "ID da etapa do funil", "required": True},
-            "company_id": {"type": "integer", "description": "ID da empresa relacionada"},
-            "person_id": {"type": "integer", "description": "ID do contato relacionado"},
-            "value": {"type": "number", "description": "Valor da oportunidade"},
-            "forecast_date": {"type": "string", "description": "Data prevista para fechamento"}
+            "search": {"type": "string", "description": "Termo para busca por título do negócio"},
+            "pipeline_id": {"type": "integer", "description": "Filtrar por ID do funil"},
+            "stage_id": {"type": "integer", "description": "Filtrar por ID da etapa"},
+            "company_id": {"type": "integer", "description": "Filtrar por ID da empresa"},
+            "contact_id": {"type": "integer", "description": "Filtrar por ID do contato"},
+            "page": {"type": "integer", "description": "Número da página para paginação"},
+            "show": {"type": "integer", "description": "Quantidade de itens por página"}
         }
     },
     "listar_funis": {
         "function": list_pipelines,
         "description": "Lista os funis de vendas no PipeRun",
         "parameters": {
-            "page": {"type": "integer", "description": "Número da página"},
-            "show": {"type": "integer", "description": "Itens por página"}
+            "page": {"type": "integer", "description": "Número da página para paginação"},
+            "show": {"type": "integer", "description": "Quantidade de itens por página"}
         }
     },
     "listar_etapas_funil": {
@@ -197,17 +185,8 @@ TOOLS_METADATA = {
         "description": "Lista as etapas de um funil específico no PipeRun",
         "parameters": {
             "pipeline_id": {"type": "integer", "description": "ID do funil", "required": True},
-            "page": {"type": "integer", "description": "Número da página"},
-            "show": {"type": "integer", "description": "Itens por página"}
-        }
-    },
-    "listar_campos_customizados": {
-        "function": list_custom_fields,
-        "description": "Lista os campos customizados no PipeRun",
-        "parameters": {
-            "entity_type": {"type": "string", "description": "Tipo da entidade"},
-            "page": {"type": "integer", "description": "Número da página"},
-            "show": {"type": "integer", "description": "Itens por página"}
+            "page": {"type": "integer", "description": "Número da página para paginação"},
+            "show": {"type": "integer", "description": "Quantidade de itens por página"}
         }
     },
     "listar_produtos": {
@@ -215,9 +194,64 @@ TOOLS_METADATA = {
         "description": "Lista os produtos cadastrados no PipeRun",
         "parameters": {
             "search": {"type": "string", "description": "Termo para busca por nome do produto"},
-            "page": {"type": "integer", "description": "Número da página"},
-            "show": {"type": "integer", "description": "Itens por página"}
+            "page": {"type": "integer", "description": "Número da página para paginação"},
+            "show": {"type": "integer", "description": "Quantidade de itens por página"}
         }
+    },
+    "exportar_empresas_csv": {
+        "function": export_companies_csv,
+        "description": "Exporta empresas para formato CSV",
+        "parameters": {
+            "search": {"type": "string", "description": "Termo para busca por nome da empresa"},
+            "page": {"type": "integer", "description": "Número da página para paginação"},
+            "show": {"type": "integer", "description": "Quantidade de itens por página"}
+        }
+    },
+    "exportar_contatos_csv": {
+        "function": export_contacts_csv,
+        "description": "Exporta contatos para formato CSV",
+        "parameters": {
+            "search": {"type": "string", "description": "Termo para busca por nome do contato"},
+            "company_id": {"type": "integer", "description": "ID da empresa para filtrar contatos"},
+            "page": {"type": "integer", "description": "Número da página para paginação"},
+            "show": {"type": "integer", "description": "Quantidade de itens por página"}
+        }
+    },
+    "obter_estatisticas_funil": {
+        "function": get_pipeline_statistics,
+        "description": "Obtém estatísticas detalhadas de um funil de vendas",
+        "parameters": {
+            "pipeline_id": {"type": "integer", "description": "ID do funil de vendas", "required": True},
+            "start_date": {"type": "string", "description": "Data inicial para filtro (YYYY-MM-DD)"},
+            "end_date": {"type": "string", "description": "Data final para filtro (YYYY-MM-DD)"}
+        }
+    },
+    "gerar_resumo_vendas": {
+        "function": generate_sales_summary,
+        "description": "Gera um resumo de vendas para um período específico",
+        "parameters": {
+            "period": {"type": "string", "description": "Período: day, week, month, quarter, year"}
+        }
+    },
+    "verificar_saude_servidor": {
+        "function": get_server_health,
+        "description": "Verifica o estado de saúde do servidor MCP",
+        "parameters": {}
+    },
+    "obter_diagnostico_servidor": {
+        "function": get_diagnostics,
+        "description": "Obtém informações de diagnóstico detalhadas sobre o servidor MCP",
+        "parameters": {}
+    },
+    "resetar_metricas_servidor": {
+        "function": reset_metrics,
+        "description": "Reinicia todas as métricas coletadas pelo servidor",
+        "parameters": {}
+    },
+    "verificar_conexao_api": {
+        "function": check_api_connection,
+        "description": "Verifica a conexão com a API do PipeRun",
+        "parameters": {}
     }
 }
 
@@ -230,10 +264,11 @@ def mcp_list_tools(**kwargs) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Lista de ferramentas e suas descrições.
     """
-    logger.info("Listando ferramentas disponíveis")
+    logger.info("Listando todas as ferramentas disponíveis (JSON-RPC)")
     
-    tools = []
-    for tool_name, metadata in TOOLS_METADATA.items():
+    tools_list = []
+    
+    for name, metadata in TOOLS_METADATA.items():
         parameters = {}
         for param_name, param_info in metadata.get("parameters", {}).items():
             parameters[param_name] = {
@@ -242,15 +277,13 @@ def mcp_list_tools(**kwargs) -> Dict[str, Any]:
                 "required": param_info.get("required", False)
             }
         
-        tools.append({
-            "name": tool_name,
+        tools_list.append({
+            "name": name,
             "description": metadata.get("description", ""),
             "parameters": parameters
         })
     
-    return {
-        "tools": tools
-    }
+    return {"tools": tools_list}
 
 # Função para executar uma ferramenta
 @dispatcher.add_method
@@ -268,44 +301,67 @@ def mcp_run_tool(**kwargs) -> Dict[str, Any]:
     tool_name = kwargs.get("tool_name")
     parameters = kwargs.get("parameters", {})
     
-    logger.info(f"Executando ferramenta: {tool_name}")
+    logger.info(f"Executando ferramenta: {tool_name} (JSON-RPC)")
     logger.debug(f"Parâmetros: {parameters}")
     
-    if not tool_name or tool_name not in TOOLS_METADATA:
+    if not tool_name:
+        error_msg = "Parâmetro 'tool_name' é obrigatório"
+        logger.error(error_msg)
+        track_error("MissingParameter", error_msg)
         return {
             "error": {
-                "type": "tool_not_found",
-                "message": f"Ferramenta '{tool_name}' não encontrada."
+                "code": 400,
+                "message": error_msg
+            }
+        }
+    
+    if tool_name not in TOOLS_METADATA:
+        error_msg = f"Ferramenta '{tool_name}' não encontrada"
+        logger.error(error_msg)
+        track_error("ToolNotFound", error_msg)
+        return {
+            "error": {
+                "code": 404,
+                "message": error_msg
             }
         }
     
     try:
+        # Registra a requisição para métricas
+        track_request()
+        
+        # Inicia o timer para medir o tempo de execução
+        start_time = time.time()
+        
         # Executa a função correspondente à ferramenta
         tool_function = TOOLS_METADATA[tool_name]["function"]
         result = tool_function(**parameters)
         
-        # Formata o resultado para o formato MCP
-        return {
-            "result": result
-        }
+        # Registra métricas de execução
+        execution_time = time.time() - start_time
+        track_tool_execution(tool_name, execution_time)
+        
+        return {"result": result}
+    
     except Exception as e:
-        logger.error(f"Erro ao executar a ferramenta {tool_name}: {str(e)}")
+        error_msg = f"Erro ao executar a ferramenta {tool_name}: {str(e)}"
+        logger.error(error_msg)
+        track_error(type(e).__name__, str(e))
         return {
             "error": {
-                "type": "execution_error",
-                "message": str(e)
+                "code": 500,
+                "message": error_msg
             }
         }
 
 # Rota para receber requisições JSON-RPC
-@app.route("/jsonrpc", methods=["POST", "GET"])
+@app.route('/jsonrpc', methods=['POST'])
 def handle_jsonrpc():
     """Manipula requisições JSON-RPC."""
-    if request.method == "GET":
-        return jsonify({
-            "message": "Este endpoint JSON-RPC só aceita requisições POST.",
-            "exemplo": "Use curl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\": \"2.0\", \"method\": \"mcp_list_tools\", \"params\": {}, \"id\": 1}' http://localhost:8000/jsonrpc"
-        })
+    logger.info("Recebida requisição JSON-RPC")
+    
+    # Registra a requisição para métricas
+    track_request()
     
     response = JSONRPCResponseManager.handle(
         request.data, dispatcher
@@ -313,19 +369,22 @@ def handle_jsonrpc():
     return jsonify(response.data)
 
 # Rota raiz para verificar se o servidor está rodando
-@app.route("/", methods=["GET"])
+@app.route('/', methods=['GET'])
 def index():
     """Rota raiz para verificar se o servidor está rodando."""
+    logger.info("Verificação de status do servidor")
+    
     return jsonify({
-        "name": "PipeRun MCP",
-        "description": "Model Context Protocol server para interagir com a API do PipeRun",
-        "version": "0.1.0",
+        "status": "online",
+        "name": mcp_config.server_name,
+        "version": mcp_config.server_version,
+        "description": mcp_config.server_description,
         "endpoints": {
-            "/": "Informações sobre o servidor",
-            "/jsonrpc": "Endpoint JSON-RPC para execução de ferramentas",
-            "/tools": "Lista todas as ferramentas disponíveis",
-            "/tools/{tool_name}": "Executa uma ferramenta específica"
-        }
+            "jsonrpc": "/jsonrpc",
+            "tools": "/tools",
+            "mcp": "/mcp"
+        },
+        "timestamp": datetime.now().isoformat()
     })
 
 # Inicia o servidor
@@ -333,5 +392,8 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     host = os.environ.get("HOST", "0.0.0.0")
     
+    # Salva a configuração MCP
+    mcp_config.save_to_file()
+    
     logger.info(f"Iniciando servidor PipeRun MCP em {host}:{port}")
-    app.run(host=host, port=port, debug=True)
+    app.run(debug=True, host=host, port=port)

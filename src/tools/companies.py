@@ -1,5 +1,5 @@
 """
-Ferramentas para gerenciamento de empresas no PipeRun.
+Ferramentas para gerenciamento de empresas (companies) no PipeRun.
 Este módulo implementa as funções para interagir com a API de empresas do PipeRun.
 """
 from typing import Dict, Any, Optional, List
@@ -9,30 +9,39 @@ from ..service.api_client import PipeRunApiClient
 
 
 def list_companies(
-    api_token: Optional[str] = None,
     search: Optional[str] = None,
     page: Optional[int] = None,
     show: Optional[int] = None,
     order_by: Optional[str] = None,
     order_type: Optional[str] = None,
-    status: Optional[bool] = None,
-    account_id: Optional[int] = None
+    api_token: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Ferramenta para listar empresas no PipeRun.
+    Ferramenta para listar empresas do PipeRun.
+    
+    Esta ferramenta permite buscar empresas com diversos filtros,
+    suporta paginação e ordenação dos resultados.
+    
+    Exemplos de uso:
+    1. Listar todas as empresas: list_companies()
+    2. Buscar por nome: list_companies(search="Empresa ABC")
+    3. Paginar resultados: list_companies(page=2, show=10)
+    4. Ordenar resultados: list_companies(order_by="name", order_type="asc")
     
     Args:
-        api_token (Optional[str]): Token de API do PipeRun.
         search (Optional[str]): Termo para busca por nome da empresa.
         page (Optional[int]): Número da página para paginação.
         show (Optional[int]): Quantidade de itens por página.
-        order_by (Optional[str]): Campo para ordenação.
+        order_by (Optional[str]): Campo para ordenação (ex: name, created_at).
         order_type (Optional[str]): Tipo de ordenação (asc ou desc).
-        status (Optional[bool]): Status da empresa (ativo/inativo).
-        account_id (Optional[int]): ID da conta à qual as empresas pertencem.
+        api_token (Optional[str]): Token de API do PipeRun.
         
     Returns:
-        Dict[str, Any]: Lista de empresas e metadados.
+        Dict[str, Any]: Dicionário contendo:
+            - success (bool): Se a operação foi bem-sucedida.
+            - items (List[Dict]): Lista de empresas encontradas.
+            - meta (Dict): Informações de paginação quando disponíveis.
+            - message (str): Mensagem de erro em caso de falha.
     """
     # Configurar parâmetros da requisição
     params = {}
@@ -46,10 +55,6 @@ def list_companies(
         params["order_by"] = order_by
     if order_type:
         params["order_type"] = order_type
-    if status is not None:
-        params["status"] = 1 if status else 0
-    if account_id:
-        params["account_id"] = account_id
     
     # Realizar a requisição HTTP diretamente usando requests
     import requests
@@ -85,15 +90,15 @@ def list_companies(
         
         # Processar a resposta
         data = response.json()
-        logger.info(f"Resposta da API: {data}")
+        logger.info(f"Resposta recebida com {len(data.get('data', []))} empresas")
         
-        # Retornar no formato esperado
+        # A API do PipeRun retorna os dados em 'data' e a paginação em 'meta'
         return {
             "success": True,
             "items": data.get("data", []),
-            "pagination": data.get("meta", {})
+            "meta": data.get("meta", {}),
+            "message": "Empresas obtidas com sucesso"
         }
-        
     except Exception as e:
         logger.error(f"Erro ao listar empresas: {str(e)}")
         return {

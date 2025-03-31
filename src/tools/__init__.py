@@ -93,6 +93,25 @@ from .products import (
     delete_product
 )
 
+# Importações de relatórios e estatísticas
+from .reports import (
+    export_companies_csv,
+    export_contacts_csv,
+    get_pipeline_statistics,
+    generate_sales_summary
+)
+
+# Importações de diagnóstico do servidor MCP
+from .diagnostics import (
+    get_server_health,
+    get_diagnostics,
+    reset_metrics,
+    check_api_connection,
+    track_request,
+    track_tool_execution,
+    track_error
+)
+
 # Exportação de funções de utilidades
 from .utils import format_date
 
@@ -167,6 +186,21 @@ __all__ = [
     'create_product',
     'update_product',
     'delete_product',
+    
+    # Relatórios e estatísticas
+    'export_companies_csv',
+    'export_contacts_csv',
+    'get_pipeline_statistics',
+    'generate_sales_summary',
+    
+    # Diagnóstico do servidor MCP
+    'get_server_health',
+    'get_diagnostics',
+    'reset_metrics',
+    'check_api_connection',
+    'track_request',
+    'track_tool_execution',
+    'track_error',
     
     # Funções de utilidades
     'format_date',

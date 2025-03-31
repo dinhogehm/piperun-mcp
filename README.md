@@ -12,7 +12,8 @@ piperun-mcp/
 ├── src/
 │   ├── __init__.py
 │   ├── config.py
-│   ├── tools_interface.py  # Nova interface REST para as ferramentas
+│   ├── mcp_config.py      # Nova configuração do MCP
+│   ├── tools_interface.py  # Interface REST para as ferramentas
 │   ├── tools/
 │   │   ├── __init__.py
 │   │   ├── auth.py
@@ -23,7 +24,12 @@ piperun-mcp/
 │   │   ├── pipelines.py
 │   │   ├── stages.py
 │   │   ├── tasks.py
+│   │   ├── reports.py     # Novas funcionalidades de relatórios
+│   │   ├── diagnostics.py # Novas ferramentas de diagnóstico
 │   │   └── utils.py
+│   ├── prompts/           # Novo pacote para templates de prompts
+│   │   ├── __init__.py
+│   │   └── templates.py   # Templates para uso com LLMs
 │   ├── schemas/
 │   │   ├── __init__.py
 │   │   ├── auth.py
@@ -37,6 +43,13 @@ piperun-mcp/
 │   └── service/
 │       ├── __init__.py
 │       └── api_client.py
+├── tests/                 # Testes automatizados
+│   ├── __init__.py
+│   ├── test_mcp_config.py
+│   ├── test_diagnostics.py
+│   └── test_tools_interface.py
+├── docs/                  # Documentação adicional
+│   └── mcp_guide.md       # Guia do MCP
 └── examples/
     ├── __init__.py
     └── usage_examples.py
@@ -54,6 +67,11 @@ Este projeto implementa ferramentas MCP (Model Context Protocol) para integraç�
 - Gerenciamento de funis (pipelines)
 - Gerenciamento de etapas de funil (stages)
 - Gerenciamento de tarefas (tasks)
+- Exportação de dados em formato CSV (reports)
+- Geração de estatísticas e resumos de vendas (reports)
+- Templates de prompts para análise de dados do CRM (prompts)
+- **Diagnóstico e monitoramento** do servidor MCP (diagnostics)
+- **Configuração avançada** do servidor MCP (mcp_config)
 
 ## Requisitos
 
@@ -62,6 +80,10 @@ Este projeto implementa ferramentas MCP (Model Context Protocol) para integraç�
 - flask
 - jsonrpc
 - pydantic
+- psutil (para monitoramento de recursos)
+- pandas (para processamento de dados)
+- jsonschema (para validação)
+- flask-cors (para suporte a CORS)
 
 ## Como usar
 
@@ -100,12 +122,27 @@ Por padrão, o servidor irá executar na porta 8000. Você pode definir uma port
 PORT=9000
 ```
 
+### Testando o Servidor
+
+Para executar os testes automatizados:
+
+```bash
+python run_tests.py
+```
+
+Para executar testes específicos:
+
+```bash
+python run_tests.py --test tests.test_diagnostics
+```
+
 ### Ferramentas Disponíveis
 
 O PipeRun MCP agora oferece duas interfaces para acesso às ferramentas:
 
 1. **Interface JSON-RPC**: Acessível via `/jsonrpc`
 2. **Interface REST**: Acessível via `/tools`
+3. **Interface MCP**: Acessível via `/mcp`
 
 #### Interface REST para Ferramentas
 
@@ -114,138 +151,85 @@ A interface REST segue o modelo do GitHub MCP, expondo as ferramentas diretament
 - **GET `/tools`**: Lista todas as ferramentas disponíveis
 - **POST `/tools/{tool_name}`**: Executa uma ferramenta específica
 
-## Ferramentas (Tools)
+#### Interface MCP
 
-### 1. Empresas (Companies)
+A nova interface MCP segue o Protocolo de Contexto de Modelo:
 
-#### list_companies
-Lista as empresas cadastradas no PipeRun.
+- **GET `/mcp/info`**: Retorna informações sobre o servidor MCP e suas capacidades
+- **GET `/mcp/health`**: Verifica a saúde do servidor MCP
+
+Para mais detalhes sobre a implementação MCP, consulte o [Guia do MCP](docs/mcp_guide.md).
+
+{{ ... }}
+
+### 7. Diagnósticos e Monitoramento
+
+#### get_server_health
+Verifica a saúde do servidor MCP, incluindo uso de recursos do sistema.
 **Parâmetros:**
-- search (string): Termo para busca por nome da empresa
-- page (integer): Número da página para paginação
-- show (integer): Quantidade de itens por página
+- nenhum
 
-#### get_company
-Obtém detalhes de uma empresa específica.
-**Parâmetros:**
-- company_id (integer, required): ID da empresa
-
-#### create_company
-Cria uma nova empresa no PipeRun.
-**Parâmetros:**
-- name (string, required): Nome da empresa
-- email (string): Email da empresa
-- phone (string): Telefone da empresa
-
-#### update_company
-Atualiza uma empresa existente no PipeRun.
-**Parâmetros:**
-- company_id (integer, required): ID da empresa
-- name (string): Nome da empresa
-- email (string): Email da empresa
-- phone (string): Telefone da empresa
-
-#### delete_company
-Exclui uma empresa do PipeRun.
-**Parâmetros:**
-- company_id (integer, required): ID da empresa
-
-### 2. Contatos (Contacts)
-
-#### list_contacts
-Lista os contatos cadastrados no PipeRun.
-**Parâmetros:**
-- search (string): Termo para busca por nome do contato
-- company_id (integer): Filtrar contatos por ID da empresa
-- page (integer): Número da página para paginação
-- show (integer): Quantidade de itens por página
-
-#### get_contact
-Obtém detalhes de um contato específico.
-**Parâmetros:**
-- contact_id (integer, required): ID do contato
-
-#### create_contact
-Cria um novo contato no PipeRun.
-**Parâmetros:**
-- name (string, required): Nome do contato
-- email (string): Email do contato
-- company_id (integer): ID da empresa do contato
-- phone (string): Telefone do contato
-
-#### update_contact
-Atualiza um contato existente no PipeRun.
-**Parâmetros:**
-- contact_id (integer, required): ID do contato
-- name (string): Nome do contato
-- email (string): Email do contato
-- company_id (integer): ID da empresa do contato
-- phone (string): Telefone do contato
-
-#### delete_contact
-Exclui um contato do PipeRun.
-**Parâmetros:**
-- contact_id (integer, required): ID do contato
-
-### 3. Negócios/Oportunidades (Deals)
-
-#### list_deals
-Lista os negócios/oportunidades cadastrados no PipeRun.
-**Parâmetros:**
-- search (string): Termo para busca por título do negócio
-- pipeline_id (integer): Filtrar por ID do funil
-- stage_id (integer): Filtrar por ID da etapa
-- company_id (integer): Filtrar por ID da empresa
-- contact_id (integer): Filtrar por ID do contato
-- page (integer): Número da página para paginação
-- show (integer): Quantidade de itens por página
-
-### 4. Funis (Pipelines)
-
-#### list_pipelines
-Lista os funis de vendas no PipeRun.
-**Parâmetros:**
-- page (integer): Número da página para paginação
-- show (integer): Quantidade de itens por página
-
-### 5. Etapas de Funil (Stages)
-
-#### list_stages
-Lista as etapas de um funil específico no PipeRun.
-**Parâmetros:**
-- pipeline_id (integer, required): ID do funil
-- page (integer): Número da página para paginação
-- show (integer): Quantidade de itens por página
-
-### 6. Produtos (Products)
-
-#### list_products
-Lista os produtos cadastrados no PipeRun.
-**Parâmetros:**
-- search (string): Termo para busca por nome do produto
-- page (integer): Número da página para paginação
-- show (integer): Quantidade de itens por página
-
-### Testando as Ferramentas
-
-Você pode testar as ferramentas das seguintes maneiras:
-
-#### 1. Via Interface REST
-
-Usando curl para listar empresas:
+**Exemplo:**
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"search": "Empresa", "page": 1, "show": 10}' http://localhost:8000/tools/list_companies
+curl -X POST http://localhost:8000/tools/get_server_health
 ```
 
-#### 2. Via JSON-RPC
+#### get_diagnostics
+Obtém informações detalhadas de diagnóstico sobre o servidor MCP.
+**Parâmetros:**
+- nenhum
 
-Usando curl para listar empresas:
+**Exemplo:**
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0", "method": "mcp_run_tool", "params": {"tool_name": "listar_empresas", "parameters": {"search": "Empresa", "page": 1, "show": 10}}, "id": 1}' http://localhost:8000/jsonrpc
+curl -X POST http://localhost:8000/tools/get_diagnostics
 ```
 
-#### 3. Usando os exemplos prontos
+#### reset_metrics
+Reinicia todas as métricas coletadas pelo servidor MCP.
+**Parâmetros:**
+- nenhum
 
-Execute o arquivo de exemplos para ver como as ferramentas funcionam:
+**Exemplo:**
 ```bash
-python -m examples.usage_examples
+curl -X POST http://localhost:8000/tools/reset_metrics
+```
+
+#### check_api_connection
+Verifica a conexão com a API do PipeRun.
+**Parâmetros:**
+- nenhum
+
+**Exemplo:**
+```bash
+curl -X POST http://localhost:8000/tools/check_api_connection
+```
+
+## Integrando com Clientes MCP
+
+Este servidor é compatível com vários clientes que implementam o Protocolo de Contexto de Modelo (MCP), incluindo:
+
+1. **Claude Desktop App**: Configure o PipeRun MCP como servidor MCP para interagir diretamente
+2. **Cursor (VSCode)**: Configure nas configurações de AI
+3. **Windsurf Editor**: Configure nas configurações de servidores MCP
+
+Para configuração detalhada de cada cliente, consulte o [Guia do MCP](docs/mcp_guide.md).
+
+## Desenvolvimento
+
+### Executando Testes
+
+O projeto inclui testes automatizados que podem ser executados com:
+
+```bash
+python run_tests.py
+```
+
+### Contribuindo
+
+Contribuições são bem-vindas! Para contribuir:
+
+1. Faça um fork do repositório
+2. Crie um branch para sua feature (`git checkout -b feature/nova-feature`)
+3. Faça commit das alterações (`git commit -am 'Adiciona nova feature'`)
+4. Faça push para o branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request

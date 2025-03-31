@@ -99,21 +99,36 @@ def list_contacts(
         }
 
 
-def get_contact(contact_id: int, api_token: Optional[str] = None) -> Dict[str, Any]:
+def get_contact(
+    contact_id: int,
+    api_token: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Ferramenta para obter detalhes de um contato específico no PipeRun.
+    
+    Esta ferramenta recupera informações detalhadas sobre um contato específico 
+    com base no seu ID. Inclui dados pessoais, empresas associadas e histórico.
+    
+    Exemplos de uso:
+    1. Obter detalhes do contato: get_contact(contact_id=123)
+    2. Obter detalhes com token específico: get_contact(contact_id=123, api_token="seu_token")
     
     Args:
         contact_id (int): ID do contato a ser consultado.
         api_token (Optional[str]): Token de API do PipeRun.
         
     Returns:
-        Dict[str, Any]: Detalhes do contato.
+        Dict[str, Any]: Dicionário contendo:
+            - success (bool): Se a operação foi bem-sucedida.
+            - data (Dict): Dados do contato quando encontrado.
+            - message (str): Mensagem de erro em caso de falha.
     """
-    if not contact_id:
+    # Validação de parâmetros
+    if not isinstance(contact_id, int) or contact_id <= 0:
         return {
             "success": False,
-            "message": "É necessário fornecer o ID do contato"
+            "message": "ID do contato deve ser um número inteiro positivo",
+            "data": {}
         }
     
     # Realizar a requisição HTTP diretamente usando requests
@@ -127,7 +142,7 @@ def get_contact(contact_id: int, api_token: Optional[str] = None) -> Dict[str, A
     token = api_token or Config.get_api_token()
     
     # Configurar URL e headers
-    url = f"{Config.BASE_URL}/persons/{contact_id}"
+    url = f"{Config.BASE_URL}/contacts/{contact_id}"
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -140,28 +155,37 @@ def get_contact(contact_id: int, api_token: Optional[str] = None) -> Dict[str, A
         response = requests.get(url, headers=headers, timeout=30)
         
         # Verificar se a resposta é válida
-        if response.status_code != 200:
+        if response.status_code == 404:
+            logger.warning(f"Contato não encontrado: ID {contact_id}")
+            return {
+                "success": False,
+                "message": f"Contato com ID {contact_id} não encontrado",
+                "data": {}
+            }
+        elif response.status_code != 200:
             logger.error(f"Erro na requisição: Status {response.status_code}")
             return {
                 "success": False,
-                "message": f"Erro na requisição: Status {response.status_code}"
+                "message": f"Erro na requisição: Status {response.status_code}",
+                "data": {}
             }
         
         # Processar a resposta
         data = response.json()
-        logger.info(f"Resposta da API: {data}")
+        logger.info(f"Contato obtido com sucesso: {data.get('data', {}).get('name', '')}")
         
-        # Retornar no formato esperado
+        # A API do PipeRun retorna os dados em 'data'
         return {
             "success": True,
-            "data": data.get("data", {})
+            "data": data.get("data", {}),
+            "message": "Contato obtido com sucesso"
         }
-        
     except Exception as e:
         logger.error(f"Erro ao obter contato: {str(e)}")
         return {
             "success": False,
-            "message": f"Erro ao obter contato: {str(e)}"
+            "message": f"Erro ao obter contato: {str(e)}",
+            "data": {}
         }
 
 
