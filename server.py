@@ -1,7 +1,7 @@
 """
-Servidor JSON-RPC para o PipeRun MCP.
-Este módulo implementa um servidor JSON-RPC que oferece as funcionalidades
-do PipeRun MCP através do protocolo MCP (Model Context Protocol).
+Servidor MCP (Model Context Protocol) para o PipeRun.
+Este módulo implementa um servidor compatível com o Model Context Protocol
+que oferece as funcionalidades do PipeRun através de APIs padronizadas.
 """
 import os
 import json
@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from jsonrpc import JSONRPCResponseManager, dispatcher
 import time
 
@@ -119,6 +120,9 @@ from src.tools_interface import tools_bp, mcp_bp, register_tools, run_tool
 
 # Inicializa a aplicação Flask
 app = Flask(__name__)
+
+# Habilita CORS para permitir requisições de origens diferentes
+CORS(app)
 
 # Registra os blueprints para as rotas REST
 app.register_blueprint(tools_bp)
@@ -255,6 +259,130 @@ TOOLS_METADATA = {
     }
 }
 
+# Função para listar as ferramentas disponíveis no formato MCP
+@app.route('/mcp/tools', methods=['GET'])
+def mcp_tools():
+    """
+    Lista todas as ferramentas disponíveis no formato MCP.
+    
+    Returns:
+        JSON: Lista de ferramentas no formato do Model Context Protocol.
+    """
+    logger.info("Listando ferramentas no formato MCP")
+    
+    tools = []
+    tools_dict = register_tools()
+    
+    for name, metadata in tools_dict.items():
+        parameters = {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+        
+        for param_name, param_info in metadata.get("parameters", {}).items():
+            param_type = param_info.get("type", "string")
+            
+            # Mapear tipos para o formato JSON Schema
+            if param_type == "integer":
+                json_type = {"type": "integer"}
+            elif param_type == "number":
+                json_type = {"type": "number"}
+            elif param_type == "boolean":
+                json_type = {"type": "boolean"}
+            elif param_type == "array":
+                json_type = {"type": "array", "items": {"type": "string"}}
+            elif param_type == "object":
+                json_type = {"type": "object"}
+            else:
+                json_type = {"type": "string"}
+            
+            # Adicionar descrição se disponível
+            if "description" in param_info:
+                json_type["description"] = param_info["description"]
+            
+            parameters["properties"][param_name] = json_type
+            
+            # Adicionar à lista de parâmetros obrigatórios, se necessário
+            if param_info.get("required", False):
+                parameters["required"].append(param_name)
+        
+        tool = {
+            "name": name,
+            "description": metadata.get("description", ""),
+            "inputSchema": parameters,
+            "authentication": {
+                "type": "none" 
+            }
+        }
+        
+        tools.append(tool)
+    
+    return jsonify({
+        "namespace": "piperun",
+        "tools": tools
+    })
+
+# Função para executar uma ferramenta no formato MCP
+@app.route('/mcp/tools/<tool_name>', methods=['POST'])
+def execute_mcp_tool(tool_name):
+    """
+    Executa uma ferramenta específica seguindo o padrão MCP.
+    
+    Args:
+        tool_name (str): Nome da ferramenta a ser executada.
+        
+    Returns:
+        JSON: Resultado da execução da ferramenta.
+    """
+    logger.info(f"Executando ferramenta MCP: {tool_name}")
+    
+    tools = register_tools()
+    
+    if tool_name not in tools:
+        logger.error(f"Ferramenta '{tool_name}' não encontrada")
+        return jsonify({
+            "error": {
+                "type": "tool_not_found",
+                "message": f"Ferramenta '{tool_name}' não encontrada."
+            }
+        }), 404
+    
+    try:
+        # Obtém os parâmetros da requisição
+        parameters = request.json or {}
+        logger.debug(f"Parâmetros: {parameters}")
+        
+        # Valida formato da requisição MCP
+        input_params = parameters.get("input", {})
+        
+        # Inicia o timer para medir o tempo de execução
+        start_time = time.time()
+        
+        # Executa a função correspondente à ferramenta
+        tool_function = tools[tool_name]["function"]
+        result = tool_function(**input_params)
+        
+        # Registra métricas de execução
+        execution_time = time.time() - start_time
+        track_tool_execution(tool_name, execution_time)
+        
+        # Retorna o resultado no formato MCP
+        return jsonify({
+            "output": result,
+            "status": "success"
+        })
+    except Exception as e:
+        logger.error(f"Erro ao executar a ferramenta {tool_name}: {str(e)}")
+        track_error(type(e).__name__, str(e))
+        return jsonify({
+            "error": {
+                "type": "execution_error",
+                "message": str(e)
+            },
+            "status": "error"
+        }), 400
+
 # Função para listar as ferramentas disponíveis
 @dispatcher.add_method
 def mcp_list_tools(**kwargs) -> Dict[str, Any]:
@@ -382,7 +510,8 @@ def index():
         "endpoints": {
             "jsonrpc": "/jsonrpc",
             "tools": "/tools",
-            "mcp": "/mcp"
+            "mcp": "/mcp",
+            "mcp_tools": "/mcp/tools"
         },
         "timestamp": datetime.now().isoformat()
     })

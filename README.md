@@ -9,10 +9,12 @@ piperun-mcp/
 ├── README.md
 ├── requirements.txt
 ├── server.py
+├── mcp_bridge.py     # Script ponte para STDIO MCP
+├── mcp_config.json   # Configuração do MCP
 ├── src/
 │   ├── __init__.py
 │   ├── config.py
-│   ├── mcp_config.py      # Nova configuração do MCP
+│   ├── mcp_config.py      # Configuração do MCP
 │   ├── tools_interface.py  # Interface REST para as ferramentas
 │   ├── tools/
 │   │   ├── __init__.py
@@ -24,10 +26,10 @@ piperun-mcp/
 │   │   ├── pipelines.py
 │   │   ├── stages.py
 │   │   ├── tasks.py
-│   │   ├── reports.py     # Novas funcionalidades de relatórios
-│   │   ├── diagnostics.py # Novas ferramentas de diagnóstico
+│   │   ├── reports.py     # Funcionalidades de relatórios
+│   │   ├── diagnostics.py # Ferramentas de diagnóstico
 │   │   └── utils.py
-│   ├── prompts/           # Novo pacote para templates de prompts
+│   ├── prompts/           # Pacote para templates de prompts
 │   │   ├── __init__.py
 │   │   └── templates.py   # Templates para uso com LLMs
 │   ├── schemas/
@@ -51,7 +53,6 @@ piperun-mcp/
 ├── docs/                  # Documentação adicional
 │   └── mcp_guide.md       # Guia do MCP
 └── examples/
-    ├── __init__.py
     └── usage_examples.py
 ```
 
@@ -70,8 +71,8 @@ Este projeto implementa ferramentas MCP (Model Context Protocol) para integraç�
 - Exportação de dados em formato CSV (reports)
 - Geração de estatísticas e resumos de vendas (reports)
 - Templates de prompts para análise de dados do CRM (prompts)
-- **Diagnóstico e monitoramento** do servidor MCP (diagnostics)
-- **Configuração avançada** do servidor MCP (mcp_config)
+- Diagnóstico e monitoramento do servidor MCP (diagnostics)
+- Configuração avançada do servidor MCP (mcp_config)
 
 ## Requisitos
 
@@ -101,7 +102,7 @@ Este projeto implementa ferramentas MCP (Model Context Protocol) para integraç�
    ```
 
 3. Configure seu token de API do PipeRun:
-   - Crie um arquivo `.env` na raiz do projeto
+   - Crie um arquivo `.env` na raiz do projeto a partir do modelo `.env.example`
    - Adicione seu token API do PipeRun:
      ```
      PIPERUN_API_TOKEN=seu_token_aqui
@@ -122,6 +123,19 @@ Por padrão, o servidor irá executar na porta 8000. Você pode definir uma port
 PORT=9000
 ```
 
+### Usando com Bridge MCP (STDIO)
+
+Para usar com clientes MCP que se comunicam via STDIO:
+
+```bash
+python mcp_bridge.py
+```
+
+Você também pode configurar variáveis de ambiente:
+```bash
+MCP_SERVER_URL=http://localhost:8000 MCP_BRIDGE_DEBUG=true python mcp_bridge.py
+```
+
 ### Testando o Servidor
 
 Para executar os testes automatizados:
@@ -136,83 +150,77 @@ Para executar testes específicos:
 python run_tests.py --test tests.test_diagnostics
 ```
 
-### Ferramentas Disponíveis
+### Interfaces Disponíveis
 
-O PipeRun MCP agora oferece duas interfaces para acesso às ferramentas:
+O PipeRun MCP oferece três interfaces para acesso às ferramentas:
 
-1. **Interface JSON-RPC**: Acessível via `/jsonrpc`
-2. **Interface REST**: Acessível via `/tools`
-3. **Interface MCP**: Acessível via `/mcp`
+1. **Interface REST (compatível com GitHub MCP)**: Acessível via `/tools`
+   - **GET `/tools`**: Lista todas as ferramentas disponíveis
+   - **POST `/tools/{tool_name}`**: Executa uma ferramenta específica
 
-#### Interface REST para Ferramentas
+2. **Interface JSON-RPC**: Acessível via `/jsonrpc`
+   - Mais recomendada para clientes que suportam JSON-RPC
+   - Método `mcp_list_tools` para listar ferramentas
+   - Método `mcp_run_tool` para executar ferramentas
 
-A interface REST segue o modelo do GitHub MCP, expondo as ferramentas diretamente:
-
-- **GET `/tools`**: Lista todas as ferramentas disponíveis
-- **POST `/tools/{tool_name}`**: Executa uma ferramenta específica
-
-#### Interface MCP
-
-A nova interface MCP segue o Protocolo de Contexto de Modelo:
-
-- **GET `/mcp/info`**: Retorna informações sobre o servidor MCP e suas capacidades
-- **GET `/mcp/health`**: Verifica a saúde do servidor MCP
+3. **Interface MCP (Model Context Protocol)**: Acessível via `/mcp`
+   - **GET `/mcp/info`**: Retorna informações sobre o servidor MCP
+   - **GET `/mcp/health`**: Verifica a saúde do servidor MCP
+   - **GET `/mcp/tools`**: Lista todas as ferramentas no formato MCP
+   - **POST `/mcp/tools/{tool_name}`**: Executa uma ferramenta específica
 
 Para mais detalhes sobre a implementação MCP, consulte o [Guia do MCP](docs/mcp_guide.md).
-
-{{ ... }}
-
-### 7. Diagnósticos e Monitoramento
-
-#### get_server_health
-Verifica a saúde do servidor MCP, incluindo uso de recursos do sistema.
-**Parâmetros:**
-- nenhum
-
-**Exemplo:**
-```bash
-curl -X POST http://localhost:8000/tools/get_server_health
-```
-
-#### get_diagnostics
-Obtém informações detalhadas de diagnóstico sobre o servidor MCP.
-**Parâmetros:**
-- nenhum
-
-**Exemplo:**
-```bash
-curl -X POST http://localhost:8000/tools/get_diagnostics
-```
-
-#### reset_metrics
-Reinicia todas as métricas coletadas pelo servidor MCP.
-**Parâmetros:**
-- nenhum
-
-**Exemplo:**
-```bash
-curl -X POST http://localhost:8000/tools/reset_metrics
-```
-
-#### check_api_connection
-Verifica a conexão com a API do PipeRun.
-**Parâmetros:**
-- nenhum
-
-**Exemplo:**
-```bash
-curl -X POST http://localhost:8000/tools/check_api_connection
-```
 
 ## Integrando com Clientes MCP
 
 Este servidor é compatível com vários clientes que implementam o Protocolo de Contexto de Modelo (MCP), incluindo:
 
 1. **Claude Desktop App**: Configure o PipeRun MCP como servidor MCP para interagir diretamente
-2. **Cursor (VSCode)**: Configure nas configurações de AI
-3. **Windsurf Editor**: Configure nas configurações de servidores MCP
+2. **Claude.ai**: Configure nas configurações de ferramentas personalizadas
+3. **Cursor (VSCode)**: Configure nas configurações de AI
+4. **Windsurf Editor**: Configure nas configurações de servidores MCP
+5. **Continue**: Adicione o servidor nas configurações MCP
 
-Para configuração detalhada de cada cliente, consulte o [Guia do MCP](docs/mcp_guide.md).
+### Configurando o Claude Desktop App
+
+1. Configure o arquivo de configuração do Claude Desktop:
+   ```json
+   {
+     "mcp_servers": [
+       {
+         "name": "PipeRun-MCP",
+         "transport": {
+           "kind": "http",
+           "url": "http://localhost:8000"
+         }
+       }
+     ]
+   }
+   ```
+
+2. Ou utilize o bridge STDIO:
+   ```json
+   {
+     "mcp_servers": [
+       {
+         "name": "PipeRun-MCP",
+         "transport": {
+           "kind": "stdio",
+           "command": "python /caminho/para/piperun-mcp/mcp_bridge.py"
+         }
+       }
+     ]
+   }
+   ```
+
+## Usando o Docker
+
+Para executar o servidor MCP usando Docker:
+
+```bash
+docker build -t piperun-mcp .
+docker run -p 8000:8000 -e PIPERUN_API_TOKEN=seu_token_aqui piperun-mcp
+```
 
 ## Desenvolvimento
 
