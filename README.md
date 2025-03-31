@@ -8,9 +8,11 @@ Este projeto implementa ferramentas para o Model Context Protocol (MCP) da Anthr
 piperun-mcp/
 ├── README.md
 ├── requirements.txt
+├── server.py
 ├── src/
 │   ├── __init__.py
 │   ├── config.py
+│   ├── tools_interface.py  # Nova interface REST para as ferramentas
 │   ├── tools/
 │   │   ├── __init__.py
 │   │   ├── auth.py
@@ -57,6 +59,8 @@ Este projeto implementa ferramentas MCP (Model Context Protocol) para integraç�
 
 - Python 3.8+
 - requests
+- flask
+- jsonrpc
 - pydantic
 
 ## Como usar
@@ -82,54 +86,166 @@ Este projeto implementa ferramentas MCP (Model Context Protocol) para integraç�
      ```
    - Você pode obter seu token em: https://app.pipe.run/v2/me/user-data
 
-### Testando o projeto
+### Iniciando o Servidor
 
-Você pode testar as ferramentas MCP de duas maneiras:
+Para iniciar o servidor MCP:
 
-#### 1. Usando os exemplos prontos
+```bash
+python server.py
+```
+
+Por padrão, o servidor irá executar na porta 8000. Você pode definir uma porta diferente no arquivo `.env`:
+
+```
+PORT=9000
+```
+
+### Ferramentas Disponíveis
+
+O PipeRun MCP agora oferece duas interfaces para acesso às ferramentas:
+
+1. **Interface JSON-RPC**: Acessível via `/jsonrpc`
+2. **Interface REST**: Acessível via `/tools`
+
+#### Interface REST para Ferramentas
+
+A interface REST segue o modelo do GitHub MCP, expondo as ferramentas diretamente:
+
+- **GET `/tools`**: Lista todas as ferramentas disponíveis
+- **POST `/tools/{tool_name}`**: Executa uma ferramenta específica
+
+## Ferramentas (Tools)
+
+### 1. Empresas (Companies)
+
+#### list_companies
+Lista as empresas cadastradas no PipeRun.
+**Parâmetros:**
+- search (string): Termo para busca por nome da empresa
+- page (integer): Número da página para paginação
+- show (integer): Quantidade de itens por página
+
+#### get_company
+Obtém detalhes de uma empresa específica.
+**Parâmetros:**
+- company_id (integer, required): ID da empresa
+
+#### create_company
+Cria uma nova empresa no PipeRun.
+**Parâmetros:**
+- name (string, required): Nome da empresa
+- email (string): Email da empresa
+- phone (string): Telefone da empresa
+
+#### update_company
+Atualiza uma empresa existente no PipeRun.
+**Parâmetros:**
+- company_id (integer, required): ID da empresa
+- name (string): Nome da empresa
+- email (string): Email da empresa
+- phone (string): Telefone da empresa
+
+#### delete_company
+Exclui uma empresa do PipeRun.
+**Parâmetros:**
+- company_id (integer, required): ID da empresa
+
+### 2. Contatos (Contacts)
+
+#### list_contacts
+Lista os contatos cadastrados no PipeRun.
+**Parâmetros:**
+- search (string): Termo para busca por nome do contato
+- company_id (integer): Filtrar contatos por ID da empresa
+- page (integer): Número da página para paginação
+- show (integer): Quantidade de itens por página
+
+#### get_contact
+Obtém detalhes de um contato específico.
+**Parâmetros:**
+- contact_id (integer, required): ID do contato
+
+#### create_contact
+Cria um novo contato no PipeRun.
+**Parâmetros:**
+- name (string, required): Nome do contato
+- email (string): Email do contato
+- company_id (integer): ID da empresa do contato
+- phone (string): Telefone do contato
+
+#### update_contact
+Atualiza um contato existente no PipeRun.
+**Parâmetros:**
+- contact_id (integer, required): ID do contato
+- name (string): Nome do contato
+- email (string): Email do contato
+- company_id (integer): ID da empresa do contato
+- phone (string): Telefone do contato
+
+#### delete_contact
+Exclui um contato do PipeRun.
+**Parâmetros:**
+- contact_id (integer, required): ID do contato
+
+### 3. Negócios/Oportunidades (Deals)
+
+#### list_deals
+Lista os negócios/oportunidades cadastrados no PipeRun.
+**Parâmetros:**
+- search (string): Termo para busca por título do negócio
+- pipeline_id (integer): Filtrar por ID do funil
+- stage_id (integer): Filtrar por ID da etapa
+- company_id (integer): Filtrar por ID da empresa
+- contact_id (integer): Filtrar por ID do contato
+- page (integer): Número da página para paginação
+- show (integer): Quantidade de itens por página
+
+### 4. Funis (Pipelines)
+
+#### list_pipelines
+Lista os funis de vendas no PipeRun.
+**Parâmetros:**
+- page (integer): Número da página para paginação
+- show (integer): Quantidade de itens por página
+
+### 5. Etapas de Funil (Stages)
+
+#### list_stages
+Lista as etapas de um funil específico no PipeRun.
+**Parâmetros:**
+- pipeline_id (integer, required): ID do funil
+- page (integer): Número da página para paginação
+- show (integer): Quantidade de itens por página
+
+### 6. Produtos (Products)
+
+#### list_products
+Lista os produtos cadastrados no PipeRun.
+**Parâmetros:**
+- search (string): Termo para busca por nome do produto
+- page (integer): Número da página para paginação
+- show (integer): Quantidade de itens por página
+
+### Testando as Ferramentas
+
+Você pode testar as ferramentas das seguintes maneiras:
+
+#### 1. Via Interface REST
+
+Usando curl para listar empresas:
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"search": "Empresa", "page": 1, "show": 10}' http://localhost:8000/tools/list_companies
+```
+
+#### 2. Via JSON-RPC
+
+Usando curl para listar empresas:
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0", "method": "mcp_run_tool", "params": {"tool_name": "listar_empresas", "parameters": {"search": "Empresa", "page": 1, "show": 10}}, "id": 1}' http://localhost:8000/jsonrpc
+```
+
+#### 3. Usando os exemplos prontos
 
 Execute o arquivo de exemplos para ver como as ferramentas funcionam:
-
 ```bash
 python -m examples.usage_examples
-```
-
-Este script demonstra como usar várias ferramentas para interagir com o CRM.
-
-#### 2. Criando seus próprios testes
-
-Você pode criar um script personalizado para testar as funcionalidades específicas:
-
-```python
-# teste_personalizado.py
-from dotenv import load_dotenv
-from src.tools import list_companies, get_company, create_company
-
-# Carrega variáveis de ambiente do arquivo .env
-load_dotenv()
-
-# Lista as primeiras 5 empresas
-resultado = list_companies(per_page=5)
-print(f"Empresas encontradas: {len(resultado.get('items', []))}")
-
-# Criar uma nova empresa (exemplo)
-nova_empresa = create_company(
-    name="Teste Empresa",
-    phone="(11) 99999-9999",
-    email="teste@empresa.com"
-)
-print(f"Empresa criada: {nova_empresa.get('success')}")
-```
-
-Execute seu script:
-```bash
-python teste_personalizado.py
-```
-
-### Integração com o Model Context Protocol (MCP)
-
-Para integrar com modelos da Anthropic usando MCP, consulte a documentação específica da Anthropic sobre como registrar e utilizar ferramentas externas.
-
-## Referências
-
-- [Documentação da API do PipeRun](https://vendas.developers.pipe.run/reference)

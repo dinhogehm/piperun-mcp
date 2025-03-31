@@ -94,8 +94,14 @@ from src.tools import (
     delete_product
 )
 
+# Importa a interface REST para ferramentas
+from src.tools_interface import tools_bp, register_tools
+
 # Inicializa a aplicação Flask
 app = Flask(__name__)
+
+# Registra o blueprint da interface REST
+app.register_blueprint(tools_bp)
 
 # Define as ferramentas e suas descrições para o MCP
 TOOLS_METADATA = {
@@ -301,7 +307,9 @@ def handle_jsonrpc():
             "exemplo": "Use curl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\": \"2.0\", \"method\": \"mcp_list_tools\", \"params\": {}, \"id\": 1}' http://localhost:8000/jsonrpc"
         })
     
-    response = JSONRPCResponseManager.handle(request.data, dispatcher)
+    response = JSONRPCResponseManager.handle(
+        request.data, dispatcher
+    )
     return jsonify(response.data)
 
 # Rota raiz para verificar se o servidor está rodando
@@ -310,10 +318,14 @@ def index():
     """Rota raiz para verificar se o servidor está rodando."""
     return jsonify({
         "name": "PipeRun MCP",
-        "description": "Servidor JSON-RPC para o PipeRun MCP",
+        "description": "Model Context Protocol server para interagir com a API do PipeRun",
         "version": "0.1.0",
-        "status": "running",
-        "tools_count": len(TOOLS_METADATA)
+        "endpoints": {
+            "/": "Informações sobre o servidor",
+            "/jsonrpc": "Endpoint JSON-RPC para execução de ferramentas",
+            "/tools": "Lista todas as ferramentas disponíveis",
+            "/tools/{tool_name}": "Executa uma ferramenta específica"
+        }
     })
 
 # Inicia o servidor
@@ -321,5 +333,5 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     host = os.environ.get("HOST", "0.0.0.0")
     
-    logger.info(f"Iniciando servidor PipeRun MCP na porta {port}")
-    app.run(host=host, port=port)
+    logger.info(f"Iniciando servidor PipeRun MCP em {host}:{port}")
+    app.run(host=host, port=port, debug=True)
