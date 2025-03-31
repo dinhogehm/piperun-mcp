@@ -15,13 +15,23 @@ startCommand:
   commandFunction: |
     function generateCommand(config) {
       return {
-        command: "python",
-        args: ["server.py"],
+        command: "bash",
+        args: ["-c", "source venv/bin/activate && python server.py"],
         env: {
           PIPERUN_API_TOKEN: config.apiToken
         }
       };
     }
+
+endpoints:
+  listTools: 
+    method: GET
+    path: /tools
+  runTool:
+    method: POST
+    path: /tools/{tool}
+    pathParams:
+      - tool
 
 build:
   dockerfile: Dockerfile
