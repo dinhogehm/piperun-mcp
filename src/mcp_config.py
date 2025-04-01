@@ -28,7 +28,8 @@ class MCPConfig:
         # Configurações de ferramentas
         self.tool_categories = [
             "empresas", 
-            "contatos", 
+            "contatos",
+            "usuários",
             "negócios", 
             "funis", 
             "etapas", 

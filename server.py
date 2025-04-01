@@ -6,6 +6,7 @@ que oferece as funcionalidades do PipeRun através de APIs padronizadas.
 import os
 import json
 import logging
+import argparse
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from dotenv import load_dotenv
@@ -518,8 +519,17 @@ def index():
 
 # Inicia o servidor
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    host = os.environ.get("HOST", "0.0.0.0")
+    # Configuração do parser de argumentos
+    parser = argparse.ArgumentParser(description='Servidor MCP (Model Context Protocol) para o PipeRun')
+    parser.add_argument('--port', type=int, default=int(os.environ.get("PORT", 8000)),
+                        help='Porta em que o servidor será executado (padrão: 8000 ou valor da variável PORT)')
+    parser.add_argument('--host', type=str, default=os.environ.get("HOST", "0.0.0.0"),
+                        help='Host em que o servidor será executado (padrão: 0.0.0.0 ou valor da variável HOST)')
+    
+    # Parsing dos argumentos
+    args = parser.parse_args()
+    port = args.port
+    host = args.host
     
     # Salva a configuração MCP
     mcp_config.save_to_file()

@@ -76,6 +76,15 @@ from .tools import (
     update_team,
     delete_team,
     
+    # Usuários
+    list_users,
+    get_user,
+    get_current_user,
+    create_user,
+    update_user,
+    deactivate_user,
+    count_users,
+    
     # Campos customizados
     list_custom_fields,
     get_custom_field,
@@ -391,6 +400,70 @@ def register_tools() -> Dict[str, Dict[str, Any]]:
             "function": check_api_connection,
             "description": "Verifica a conexão com a API do PipeRun",
             "parameters": {}
+        },
+        
+        # Usuários
+        "list_users": {
+            "function": list_users,
+            "description": "Lista os usuários cadastrados no PipeRun",
+            "parameters": {
+                "search": {"type": "string", "description": "Termo para busca por nome ou email do usuário"},
+                "team_id": {"type": "integer", "description": "Filtrar por ID da equipe"},
+                "page": {"type": "integer", "description": "Número da página para paginação"},
+                "per_page": {"type": "integer", "description": "Quantidade de itens por página"},
+                "status": {"type": "boolean", "description": "Filtrar por status (ativo/inativo)"}
+            }
+        },
+        "get_user": {
+            "function": get_user,
+            "description": "Obtém detalhes de um usuário específico no PipeRun",
+            "parameters": {
+                "user_id": {"type": "integer", "description": "ID do usuário", "required": True}
+            }
+        },
+        "get_current_user": {
+            "function": get_current_user,
+            "description": "Obtém detalhes do usuário atual (associado ao token de API)",
+            "parameters": {}
+        },
+        "create_user": {
+            "function": create_user,
+            "description": "Cria um novo usuário no PipeRun",
+            "parameters": {
+                "name": {"type": "string", "description": "Nome do usuário", "required": True},
+                "email": {"type": "string", "description": "Email do usuário", "required": True},
+                "password": {"type": "string", "description": "Senha do usuário", "required": True},
+                "role": {"type": "string", "description": "Função do usuário na empresa"},
+                "phone": {"type": "string", "description": "Telefone fixo do usuário"},
+                "mobile_phone": {"type": "string", "description": "Telefone móvel do usuário"},
+                "team_id": {"type": "integer", "description": "ID da equipe do usuário"}
+            }
+        },
+        "update_user": {
+            "function": update_user,
+            "description": "Atualiza um usuário existente no PipeRun",
+            "parameters": {
+                "user_id": {"type": "integer", "description": "ID do usuário", "required": True},
+                "name": {"type": "string", "description": "Nome do usuário"},
+                "email": {"type": "string", "description": "Email do usuário"},
+                "role": {"type": "string", "description": "Função do usuário na empresa"},
+                "phone": {"type": "string", "description": "Telefone fixo do usuário"},
+                "mobile_phone": {"type": "string", "description": "Telefone móvel do usuário"},
+                "team_id": {"type": "integer", "description": "ID da equipe do usuário"},
+                "status": {"type": "boolean", "description": "Status do usuário (ativo/inativo)"}
+            }
+        },
+        "deactivate_user": {
+            "function": deactivate_user,
+            "description": "Desativa um usuário no PipeRun",
+            "parameters": {
+                "user_id": {"type": "integer", "description": "ID do usuário", "required": True}
+            }
+        },
+        "count_users": {
+            "function": count_users,
+            "description": "Conta o número total de usuários na conta PipeRun",
+            "parameters": {}
         }
     }
 
@@ -432,7 +505,7 @@ def list_all_tools():
     return jsonify({"tools": tools_list})
 
 # Rota para executar uma ferramenta específica
-@tools_bp.route('/<tool_name>', methods=['POST'])
+@tools_bp.route('/<tool_name>', methods=['GET', 'POST'])
 def execute_tool(tool_name):
     """
     Executa uma ferramenta específica do PipeRun MCP.
@@ -443,7 +516,7 @@ def execute_tool(tool_name):
     Returns:
         JSON: Resultado da execução da ferramenta.
     """
-    logger.info(f"Executando ferramenta: {tool_name}")
+    logger.info(f"Executando ferramenta: {tool_name} via método {request.method}")
     
     tools = register_tools()
     
@@ -457,8 +530,21 @@ def execute_tool(tool_name):
         }), 404
     
     try:
-        # Obtém os parâmetros da requisição
-        parameters = request.json or {}
+        # Obtém os parâmetros da requisição com base no método HTTP
+        if request.method == 'POST':
+            parameters = request.json or {}
+        else:  # GET
+            parameters = request.args.to_dict()
+            
+            # Converte valores numéricos de string para número
+            for key, value in parameters.items():
+                if value.isdigit():
+                    parameters[key] = int(value)
+                elif value.lower() == 'true':
+                    parameters[key] = True
+                elif value.lower() == 'false':
+                    parameters[key] = False
+                    
         logger.debug(f"Parâmetros: {parameters}")
         
         # Inicia o timer para medir o tempo de execução
@@ -472,8 +558,12 @@ def execute_tool(tool_name):
         execution_time = time.time() - start_time
         track_tool_execution(tool_name, execution_time)
         
-        # Retorna o resultado
-        return jsonify({"result": result})
+        # Retorna o resultado diretamente para endpoints que não retornam estrutura result
+        if tool_name in ['count_users', 'list_users', 'get_current_user']:
+            return jsonify(result)
+        else:
+            # Retorna o resultado no formato padrão
+            return jsonify({"result": result})
     except Exception as e:
         logger.error(f"Erro ao executar a ferramenta {tool_name}: {str(e)}")
         # Registra o erro

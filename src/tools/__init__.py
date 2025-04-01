@@ -75,6 +75,17 @@ from .teams import (
     delete_team
 )
 
+# Importações de usuários
+from .users import (
+    list_users,
+    get_user,
+    get_current_user,
+    create_user,
+    update_user,
+    deactivate_user,
+    count_users
+)
+
 # Importações de campos customizados
 from .custom_fields import (
     list_custom_fields,
@@ -172,6 +183,15 @@ __all__ = [
     'create_team',
     'update_team',
     'delete_team',
+    
+    # Usuários
+    'list_users',
+    'get_user',
+    'get_current_user',
+    'create_user',
+    'update_user',
+    'deactivate_user',
+    'count_users',
     
     # Campos customizados
     'list_custom_fields',
