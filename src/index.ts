@@ -1,9 +1,9 @@
-// Importações simplificadas usando apenas o módulo principal
-const { Server } = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
+// Importações essenciais
+const MCP = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
 const { z } = require('zod');
 const axios = require('axios');
 const dotenv = require('dotenv');
-const WebSocket = require('ws');
+const WS = require('ws');
 
 // Type for error handling
 interface ErrorWithMessage {
@@ -223,7 +223,7 @@ async function list_organizations(page: number = 1, show: number = 100): Promise
 // As verificações ocorrem apenas quando as ferramentas são chamadas
 
 // Create MCP server
-const server = new Server({
+const server = new MCP.Server({
   name: "piperun-mcp-server",
   version: "1.0.0",
   capabilities: {
@@ -692,25 +692,25 @@ const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 console.log(`Starting server on port ${port}`);
 
 // Instanciar o servidor WebSocket diretamente
-const wss = new WebSocket.Server({ port });
+const wss = new WS.Server({ port });
 server.start({
-  onRequest: (req) => {
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(req));
+  onRequest: (request: any) => {
+    wss.clients.forEach((client: any) => {
+      if (client.readyState === WS.OPEN) {
+        client.send(JSON.stringify(request));
       }
     });
   }
 });
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws: any) => {
   console.log('New client connected');
   
-  ws.on('message', (message) => {
+  ws.on('message', (message: any) => {
     try {
       const data = JSON.parse(message.toString());
-      server.handleMessage(data, (response) => {
-        if (ws.readyState === WebSocket.OPEN) {
+      server.handleMessage(data, (response: any) => {
+        if (ws.readyState === WS.OPEN) {
           ws.send(JSON.stringify(response));
         }
       });
