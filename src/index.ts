@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk";
 import { WebSocketServerTransport } from "@modelcontextprotocol/sdk";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk";
 import { z } from "zod";
 import axios from "axios";
 import * as dotenv from 'dotenv';
