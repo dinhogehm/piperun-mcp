@@ -1,8 +1,8 @@
-// @ts-ignore
-import * as MCP from '@modelcontextprotocol/sdk';
-import { z } from "zod";
-import axios from "axios";
-import * as dotenv from 'dotenv';
+// Importações no formato CommonJS
+const MCP = require('@modelcontextprotocol/sdk');
+const { z } = require('zod');
+const axios = require('axios');
+const dotenv = require('dotenv');
 
 // Type for error handling
 interface ErrorWithMessage {
@@ -81,7 +81,7 @@ async function list_deals(page: number = 1, show: number = 100, pipeline_id?: nu
     const apiToken = getApiToken();
     const apiUrl = getApiUrl();
     
-    const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/deals`, {
+    const response = await axios.get(`${apiUrl}/deals`, {
       params: {
         ...params,
         token: apiToken
@@ -103,7 +103,7 @@ async function list_pipelines(page: number = 1, show: number = 100): Promise<any
     const apiToken = getApiToken();
     const apiUrl = getApiUrl();
     
-    const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/pipelines`, {
+    const response = await axios.get(`${apiUrl}/pipelines`, {
       params: {
         page,
         show,
@@ -133,7 +133,7 @@ async function list_stages(page: number = 1, show: number = 100, pipeline_id?: n
     const apiToken = getApiToken();
     const apiUrl = getApiUrl();
     
-    const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/stages`, {
+    const response = await axios.get(`${apiUrl}/stages`, {
       params: {
         ...params,
         token: apiToken
@@ -155,7 +155,7 @@ async function list_products(page: number = 1, show: number = 100): Promise<any>
     const apiToken = getApiToken();
     const apiUrl = getApiUrl();
     
-    const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/items`, {
+    const response = await axios.get(`${apiUrl}/items`, {
       params: {
         page,
         show,
@@ -178,7 +178,7 @@ async function list_persons(page: number = 1, show: number = 100): Promise<any> 
     const apiToken = getApiToken();
     const apiUrl = getApiUrl();
     
-    const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/people`, {
+    const response = await axios.get(`${apiUrl}/people`, {
       params: {
         page,
         show,
@@ -201,7 +201,7 @@ async function list_organizations(page: number = 1, show: number = 100): Promise
     const apiToken = getApiToken();
     const apiUrl = getApiUrl();
     
-    const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/organizations`, {
+    const response = await axios.get(`${apiUrl}/organizations`, {
       params: {
         page,
         show,
@@ -279,7 +279,7 @@ server.tool(
       const apiToken = getApiToken();
       const apiUrl = getApiUrl();
       
-      const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/deals/${dealId}`, {
+      const response = await axios.get(`${apiUrl}/deals/${dealId}`, {
         params: {
           token: apiToken
         }
@@ -346,7 +346,7 @@ server.tool(
       const apiToken = getApiToken();
       const apiUrl = getApiUrl();
       
-      const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/people/${personId}`, {
+      const response = await axios.get(`${apiUrl}/people/${personId}`, {
         params: {
           token: apiToken
         }
@@ -413,7 +413,7 @@ server.tool(
       const apiToken = getApiToken();
       const apiUrl = getApiUrl();
       
-      const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/organizations/${organizationId}`, {
+      const response = await axios.get(`${apiUrl}/organizations/${organizationId}`, {
         params: {
           token: apiToken
         }
@@ -480,7 +480,7 @@ server.tool(
       const apiToken = getApiToken();
       const apiUrl = getApiUrl();
       
-      const response = await axios.get<PiperunResponse<any>>(`${apiUrl}/pipelines/${pipelineId}`, {
+      const response = await axios.get(`${apiUrl}/pipelines/${pipelineId}`, {
         params: {
           token: apiToken
         }

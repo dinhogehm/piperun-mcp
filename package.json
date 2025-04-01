@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "description": "Servidor MCP para integração com o CRM Piperun",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node-esm src/index.ts"
+    "dev": "ts-node src/index.ts"
   },
   "keywords": [
     "piperun",
