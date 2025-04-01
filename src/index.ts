@@ -1,6 +1,6 @@
-// Importações compatíveis com a estrutura de exportação do SDK
-const { McpServer } = require('@modelcontextprotocol/sdk/dist/cjs/server');
-const { WebSocketServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/transports/websocket');
+// Importações diretas para os arquivos do SDK usando a estrutura correta
+const { McpServer } = require('@modelcontextprotocol/sdk/dist/cjs/server/server');
+const { WebSocketServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/server/transports/websocket');
 const { z } = require('zod');
 const axios = require('axios');
 const dotenv = require('dotenv');
