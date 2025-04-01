@@ -1,5 +1,5 @@
-import { McpServer } from "@modelcontextprotocol/sdk";
-import { WebSocketServerTransport } from "@modelcontextprotocol/sdk";
+// @ts-ignore
+import * as MCP from '@modelcontextprotocol/sdk';
 import { z } from "zod";
 import axios from "axios";
 import * as dotenv from 'dotenv';
@@ -222,7 +222,7 @@ async function list_organizations(page: number = 1, show: number = 100): Promise
 // As verificações ocorrem apenas quando as ferramentas são chamadas
 
 // Create MCP server
-const server = new McpServer({
+const server = new MCP.McpServer({
   name: "piperun-mcp-server",
   version: "1.0.0",
   capabilities: {
@@ -691,4 +691,4 @@ const port = Number(process.env.PORT) || 3000;
 console.log(`Starting server on port ${port}`);
 
 // Usar WebSocket para conformidade com o Smithery.ai
-server.start(new WebSocketServerTransport({ port }));
+server.start(new MCP.WebSocketServerTransport({ port }));
