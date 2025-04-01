@@ -1,6 +1,4 @@
 // Importações essenciais
-const { McpServer } = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
-const { WebSocketServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/server/transports/websocket');
 const axios = require('axios');
 const { z } = require('zod');
 const dotenv = require('dotenv');
@@ -248,6 +246,136 @@ async function list_products({ page = 1, show = 100 }: PaginationParams) {
   }
 }
 
+// =============================================================
+// IMPLEMENTAÇÃO SIMPLIFICADA DO SERVIDOR MCP
+// =============================================================
+
+// Classe que define um servidor MCP simples
+class SimpleServer {
+  private tools: Map<string, any>;
+  private toolDefs: Map<string, any>;
+  
+  constructor() {
+    this.tools = new Map();
+    this.toolDefs = new Map();
+    console.log("Servidor MCP simples inicializado");
+  }
+  
+  // Adicionar uma ferramenta ao servidor
+  addTool(id: string, description: string, schema: any, handler: Function) {
+    this.tools.set(id, handler);
+    this.toolDefs.set(id, {
+      id,
+      description,
+      schema
+    });
+    console.log(`Ferramenta registrada: ${id}`);
+  }
+  
+  // Iniciar o servidor
+  start() {
+    console.log("Servidor MCP iniciado com as seguintes ferramentas:");
+    for (const [id, def] of this.toolDefs.entries()) {
+      console.log(`- ${id}: ${def.description}`);
+    }
+  }
+  
+  // Manipular uma mensagem JSON-RPC
+  async handleMessage(message: any, callback: Function) {
+    try {
+      // Verificar se a mensagem segue o formato JSON-RPC
+      if (!message.jsonrpc || !message.id || !message.method) {
+        return callback({
+          jsonrpc: "2.0",
+          error: {
+            code: -32600,
+            message: "Mensagem não segue o formato JSON-RPC"
+          },
+          id: message.id || null
+        });
+      }
+      
+      // Verificar se o método é para execução de ferramenta
+      if (message.method === "execute") {
+        const toolId = message.params?.id;
+        const toolParams = message.params?.arguments || {};
+        
+        // Verificar se a ferramenta existe
+        if (!this.tools.has(toolId)) {
+          return callback({
+            jsonrpc: "2.0",
+            error: {
+              code: -32601,
+              message: `Ferramenta não encontrada: ${toolId}`
+            },
+            id: message.id
+          });
+        }
+        
+        try {
+          // Executar a ferramenta
+          console.log(`Executando ferramenta ${toolId} com parâmetros:`, toolParams);
+          const handler = this.tools.get(toolId);
+          const result = await handler(toolParams);
+          
+          // Retornar o resultado
+          return callback({
+            jsonrpc: "2.0",
+            result: {
+              ...result
+            },
+            id: message.id
+          });
+        } catch (error) {
+          // Erro durante a execução da ferramenta
+          console.error(`Erro ao executar ferramenta ${toolId}:`, getErrorMessage(error));
+          return callback({
+            jsonrpc: "2.0",
+            error: {
+              code: -32000,
+              message: `Erro ao executar ferramenta: ${getErrorMessage(error)}`
+            },
+            id: message.id
+          });
+        }
+      } else if (message.method === "list_tools") {
+        // Listar todas as ferramentas disponíveis
+        const tools = Array.from(this.toolDefs.values());
+        return callback({
+          jsonrpc: "2.0",
+          result: { tools },
+          id: message.id
+        });
+      } else {
+        // Método desconhecido
+        return callback({
+          jsonrpc: "2.0",
+          error: {
+            code: -32601,
+            message: `Método desconhecido: ${message.method}`
+          },
+          id: message.id
+        });
+      }
+    } catch (error) {
+      // Erro ao processar a mensagem
+      console.error("Erro ao processar mensagem:", getErrorMessage(error));
+      return callback({
+        jsonrpc: "2.0",
+        error: {
+          code: -32700,
+          message: `Erro ao processar mensagem: ${getErrorMessage(error)}`
+        },
+        id: message.id || null
+      });
+    }
+  }
+}
+
+// =============================================================
+// INSTANCIAR E CONFIGURAR O SERVIDOR
+// =============================================================
+
 // Definição do Schema Zod para validação de parâmetros
 const PaginationSchema = z.object({
   page: z.number().optional().default(1),
@@ -284,7 +412,7 @@ const PipelineIdSchema = z.object({
 console.log("Iniciando servidor MCP para integração com o Piperun...");
 
 // Criar uma instância básica do servidor MCP
-const server = new McpServer();
+const server = new SimpleServer();
 
 // Registrar funções no servidor MCP
 server.addTool(
@@ -374,7 +502,11 @@ wss.on('connection', (ws: any) => {
   console.log('Novo cliente conectado');
   
   // Enviar mensagem de confirmação
-  ws.send(JSON.stringify({ type: 'connection', status: 'connected', timestamp: new Date().toISOString() }));
+  ws.send(JSON.stringify({ 
+    jsonrpc: "2.0",
+    result: { status: 'connected' },
+    id: "connection-" + Date.now()
+  }));
   
   ws.on('message', (message: any) => {
     try {
