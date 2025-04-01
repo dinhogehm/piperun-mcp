@@ -691,35 +691,90 @@ console.log("Starting MCP server for Piperun integration");
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 console.log(`Starting server on port ${port}`);
 
-// Instanciar o servidor WebSocket diretamente
+// Implementação robusta do WebSocket seguindo o protocolo MCP
 const wss = new WS.Server({ port });
+
+// Objeto para armazenar clientes ativos
+const clients = new Map();
+
 server.start({
   onRequest: (request: any) => {
+    console.log('Enviando requisição para os clientes:', request.id);
     wss.clients.forEach((client: any) => {
       if (client.readyState === WS.OPEN) {
-        client.send(JSON.stringify(request));
+        try {
+          client.send(JSON.stringify(request));
+        } catch (error) {
+          console.error('Erro ao enviar mensagem para cliente:', error);
+        }
       }
     });
   }
 });
 
+// Gerenciamento de conexões WebSocket
 wss.on('connection', (ws: any) => {
-  console.log('New client connected');
+  const clientId = Date.now().toString();
+  clients.set(clientId, ws);
+  console.log(`Nova conexão estabelecida (ID: ${clientId}). Total de clientes: ${clients.size}`);
+  
+  // Enviar mensagem de teste para verificar conexão
+  try {
+    ws.send(JSON.stringify({ type: 'connection_status', status: 'connected' }));
+  } catch (error) {
+    console.error('Erro ao enviar mensagem de status:', error);
+  }
   
   ws.on('message', (message: any) => {
     try {
+      console.log(`Mensagem recebida do cliente ${clientId}:`, message.toString().substring(0, 100) + '...');
       const data = JSON.parse(message.toString());
+      
+      // Verificar se a mensagem segue o formato MCP
+      if (!data.jsonrpc && !data.id && !data.method) {
+        console.log('Mensagem não segue formato MCP:', data);
+      }
+      
       server.handleMessage(data, (response: any) => {
         if (ws.readyState === WS.OPEN) {
-          ws.send(JSON.stringify(response));
+          try {
+            console.log(`Enviando resposta para cliente ${clientId}:`, 
+              JSON.stringify(response).substring(0, 100) + '...');
+            ws.send(JSON.stringify(response));
+          } catch (error) {
+            console.error(`Erro ao enviar resposta para cliente ${clientId}:`, error);
+          }
+        } else {
+          console.warn(`Cliente ${clientId} não está conectado (readyState: ${ws.readyState})`);
         }
       });
     } catch (error) {
-      console.error('Error handling message:', error);
+      console.error(`Erro ao processar mensagem do cliente ${clientId}:`, error);
+      // Enviar erro de volta para o cliente
+      if (ws.readyState === WS.OPEN) {
+        try {
+          ws.send(JSON.stringify({
+            jsonrpc: "2.0",
+            error: {
+              code: -32700,
+              message: "Parse error: " + getErrorMessage(error)
+            },
+            id: null
+          }));
+        } catch (sendError) {
+          console.error('Erro ao enviar mensagem de erro:', sendError);
+        }
+      }
     }
   });
   
-  ws.on('close', () => {
-    console.log('Client disconnected');
+  ws.on('close', (code: number, reason: string) => {
+    clients.delete(clientId);
+    console.log(`Cliente ${clientId} desconectado. Código: ${code}, Motivo: ${reason || 'Não especificado'}`);
+    console.log(`Total de clientes restantes: ${clients.size}`);
+  });
+  
+  ws.on('error', (error: any) => {
+    console.error(`Erro na conexão WebSocket com cliente ${clientId}:`, error);
   });
 });
