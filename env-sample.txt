@@ -1,0 +1,2 @@
+PIPERUN_API_TOKEN=seu_token_aqui
+PIPERUN_API_URL=https://api.piperun.com/v1
