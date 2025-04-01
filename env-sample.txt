@@ -1,2 +1,2 @@
-PIPERUN_API_TOKEN=seu_token_aqui
+PIPERUN_API_TOKEN=e9c00ac9c6120c6afdbcba7d0db61fa9
 PIPERUN_API_URL=https://api.piperun.com/v1
