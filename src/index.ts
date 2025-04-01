@@ -245,7 +245,7 @@ server.tool(
     stage_id: z.number().optional().describe("Stage ID"),
     person_id: z.number().optional().describe("Person ID")
   },
-  async ({ page = 1, show = 100, pipeline_id, stage_id, person_id }) => {
+  async ({ page = 1, show = 100, pipeline_id, stage_id, person_id }: { page?: number, show?: number, pipeline_id?: number, stage_id?: number, person_id?: number }) => {
     try {
       const response = await list_deals(page, show, pipeline_id, stage_id, person_id);
       return {
@@ -274,7 +274,7 @@ server.tool(
   {
     dealId: z.number().describe("Piperun deal ID")
   },
-  async ({ dealId }) => {
+  async ({ dealId }: { dealId: number }) => {
     try {
       const apiToken = getApiToken();
       const apiUrl = getApiUrl();
@@ -312,7 +312,7 @@ server.tool(
     page: z.number().optional().describe("Page number"),
     show: z.number().optional().describe("Number of items per page")
   },
-  async ({ page = 1, show = 100 }) => {
+  async ({ page = 1, show = 100 }: { page?: number, show?: number }) => {
     try {
       const response = await list_persons(page, show);
       return {
@@ -341,7 +341,7 @@ server.tool(
   {
     personId: z.number().describe("Piperun person ID")
   },
-  async ({ personId }) => {
+  async ({ personId }: { personId: number }) => {
     try {
       const apiToken = getApiToken();
       const apiUrl = getApiUrl();
@@ -379,7 +379,7 @@ server.tool(
     page: z.number().optional().describe("Page number"),
     show: z.number().optional().describe("Number of items per page")
   },
-  async ({ page = 1, show = 100 }) => {
+  async ({ page = 1, show = 100 }: { page?: number, show?: number }) => {
     try {
       const response = await list_organizations(page, show);
       return {
@@ -408,7 +408,7 @@ server.tool(
   {
     organizationId: z.number().describe("Piperun organization ID")
   },
-  async ({ organizationId }) => {
+  async ({ organizationId }: { organizationId: number }) => {
     try {
       const apiToken = getApiToken();
       const apiUrl = getApiUrl();
@@ -446,7 +446,7 @@ server.tool(
     page: z.number().optional().describe("Page number"),
     show: z.number().optional().describe("Number of items per page")
   },
-  async ({ page = 1, show = 100 }) => {
+  async ({ page = 1, show = 100 }: { page?: number, show?: number }) => {
     try {
       const response = await list_pipelines(page, show);
       return {
@@ -545,7 +545,7 @@ server.tool(
     page: z.number().optional().describe("Page number"),
     show: z.number().optional().describe("Number of items per page")
   },
-  async ({ page = 1, show = 100 }) => {
+  async ({ page = 1, show = 100 }: { page?: number, show?: number }) => {
     try {
       const response = await list_products(page, show);
       
