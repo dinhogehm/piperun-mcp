@@ -1,5 +1,6 @@
-// Importações no formato CommonJS
-const MCP = require('@modelcontextprotocol/sdk');
+// Importações compatíveis com a estrutura de exportação do SDK
+const { McpServer } = require('@modelcontextprotocol/sdk/dist/cjs/server');
+const { WebSocketServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/transports/websocket');
 const { z } = require('zod');
 const axios = require('axios');
 const dotenv = require('dotenv');
@@ -222,7 +223,7 @@ async function list_organizations(page: number = 1, show: number = 100): Promise
 // As verificações ocorrem apenas quando as ferramentas são chamadas
 
 // Create MCP server
-const server = new MCP.McpServer({
+const server = new McpServer({
   name: "piperun-mcp-server",
   version: "1.0.0",
   capabilities: {
@@ -691,4 +692,4 @@ const port = Number(process.env.PORT) || 3000;
 console.log(`Starting server on port ${port}`);
 
 // Usar WebSocket para conformidade com o Smithery.ai
-server.start(new MCP.WebSocketServerTransport({ port }));
+server.start(new WebSocketServerTransport({ port }));
