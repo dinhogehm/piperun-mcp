@@ -7,10 +7,9 @@ COPY package*.json ./
 
 # Instala todas as dependências, garantindo que a flag --production não esteja ativa
 RUN npm config set legacy-peer-deps true \
-    && npm install --no-production --verbose \
+    && npm install --no-production \
     && echo "Verificando se o SDK está instalado:" \
-    && ls -la node_modules/@modelcontextprotocol \
-    && cat node_modules/@modelcontextprotocol/sdk/package.json
+    && ls -la node_modules/@modelcontextprotocol
 
 # Copia o restante dos arquivos 
 COPY . .
@@ -18,8 +17,12 @@ COPY . .
 # Verificar se o tsconfig.json tem o conteúdo correto
 RUN cat tsconfig.json
 
-# Build da aplicação com verbose
-RUN npm run build -- --verbose
+# Alternativa: instalar o SDK globalmente para garantir que o TypeScript o encontre
+RUN npm install -g @modelcontextprotocol/sdk@1.8.0 \
+    && npm list -g @modelcontextprotocol/sdk
+
+# Build da aplicação
+RUN npm run build
 
 # Porta da aplicação
 EXPOSE 3000
