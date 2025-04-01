@@ -1,780 +1,420 @@
 // Importações essenciais
-const MCP = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
-const { z } = require('zod');
+const { McpServer } = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
+const { WebSocketServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/server/transports/websocket');
 const axios = require('axios');
+const { z } = require('zod');
 const dotenv = require('dotenv');
 const WS = require('ws');
 
-// Type for error handling
-interface ErrorWithMessage {
-  message: string;
-}
-
-function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof (error as Record<string, unknown>).message === 'string'
-  );
-}
-
-function getErrorMessage(error: unknown): string {
-  if (isErrorWithMessage(error)) {
-    return error.message;
+// Configurações
+dotenv.config();
+const apiToken = process.env.PIPERUN_API_TOKEN;
+const apiUrl = process.env.PIPERUN_API_URL || 'https://api.piperun.com/v1';
+const apiConfig = {
+  headers: {
+    'Authorization': `Bearer ${apiToken}`
   }
+};
+
+if (!apiToken) {
+  console.error('Token da API Piperun não configurado! Defina a variável de ambiente PIPERUN_API_TOKEN.');
+  process.exit(1);
+}
+
+console.log('Conectando à API Piperun:', apiUrl);
+
+// Interfaces
+interface PaginationParams {
+  page?: number;
+  show?: number;
+}
+
+interface DealsParams extends PaginationParams {
+  pipeline_id?: number;
+  stage_id?: number;
+  person_id?: number;
+}
+
+interface StagesParams extends PaginationParams {
+  pipeline_id?: number;
+}
+
+interface IdParam {
+  dealId: number;
+}
+
+interface PersonIdParam {
+  personId: number;
+}
+
+interface OrganizationIdParam {
+  organizationId: number;
+}
+
+interface PipelineIdParam {
+  pipelineId: number;
+}
+
+// Utilitários
+function getErrorMessage(error: any): string {
+  if (error instanceof Error) return error.message;
   return String(error);
 }
 
-// Tipo para a resposta padrão da API PipeRun
-interface PiperunResponse<T> {
-  status: boolean;
-  message: string;
-  data: T;
-  meta?: {
-    pagination: {
-      total: number;
-      count: number;
-      per_page: number;
-      current_page: number;
-      total_pages: number;
-      links: {
-        previous?: string;
-        next?: string;
-      };
-    };
-  };
-}
-
-// Load environment variables
-dotenv.config();
-
-// Verificar variáveis de ambiente apenas ao executar operações, não ao iniciar o servidor
-// Isso permite o lazy loading necessário para o Smithery.ai
-const getApiToken = (): string => {
-  if (!process.env.PIPERUN_API_TOKEN) {
-    throw new Error("PIPERUN_API_TOKEN environment variable is required");
-  }
-  return process.env.PIPERUN_API_TOKEN;
-};
-
-const getApiUrl = (): string => {
-  if (!process.env.PIPERUN_API_URL) {
-    return "https://api.piperun.com/v1"; // URL padrão se não estiver configurada
-  }
-  return process.env.PIPERUN_API_URL;
-};
-
-// Funções utilitárias para interação com a API do Piperun
-async function list_deals(page: number = 1, show: number = 100, pipeline_id?: number, stage_id?: number, person_id?: number): Promise<any> {
+// Funções para interação com a API Piperun
+async function list_deals({ page = 1, show = 100, pipeline_id, stage_id, person_id }: DealsParams) {
   try {
-    console.log(`Fetching deals with page=${page}, show=${show}, pipeline_id=${pipeline_id}, stage_id=${stage_id}, person_id=${person_id}`);
+    console.log(`Listando negócios: página ${page}, itens por página ${show}`);
     
-    const params: Record<string, any> = {
-      page,
-      show,
-    };
-    
+    // Construir parâmetros da consulta
+    const params: Record<string, any> = { page, show };
     if (pipeline_id) params.pipeline_id = pipeline_id;
     if (stage_id) params.stage_id = stage_id;
     if (person_id) params.person_id = person_id;
     
-    const apiToken = getApiToken();
-    const apiUrl = getApiUrl();
-    
-    const response = await axios.get(`${apiUrl}/deals`, {
-      params: {
-        ...params,
-        token: apiToken
-      }
+    const response = await axios.get(`${apiUrl}/deals`, { 
+      params, 
+      headers: apiConfig.headers 
     });
     
-    console.log(`Successfully fetched ${response.data?.data?.length || 0} deals`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching deals:', getErrorMessage(error));
-    throw error;
-  }
-}
-
-async function list_pipelines(page: number = 1, show: number = 100): Promise<any> {
-  try {
-    console.log(`Fetching pipelines with page=${page}, show=${show}`);
-    
-    const apiToken = getApiToken();
-    const apiUrl = getApiUrl();
-    
-    const response = await axios.get(`${apiUrl}/pipelines`, {
-      params: {
-        page,
-        show,
-        token: apiToken
-      }
-    });
-    
-    console.log(`Successfully fetched ${response.data?.data?.length || 0} pipelines`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching pipelines:', getErrorMessage(error));
-    throw error;
-  }
-}
-
-async function list_stages(page: number = 1, show: number = 100, pipeline_id?: number): Promise<any> {
-  try {
-    console.log(`Fetching stages with page=${page}, show=${show}, pipeline_id=${pipeline_id}`);
-    
-    const params: Record<string, any> = {
-      page,
-      show,
+    console.log(`Dados retornados: ${response.data.data.length} negócios`);
+    return { 
+      deals: response.data.data,
+      meta: response.data.meta
     };
+  } catch (error) {
+    console.error('Erro ao listar negócios:', getErrorMessage(error));
+    throw new Error(`Falha ao listar negócios: ${getErrorMessage(error)}`);
+  }
+}
+
+async function get_deal({ dealId }: IdParam) {
+  try {
+    console.log(`Obtendo detalhes do negócio ID: ${dealId}`);
+    const response = await axios.get(`${apiUrl}/deals/${dealId}`, { 
+      headers: apiConfig.headers 
+    });
     
+    console.log(`Dados do negócio ID ${dealId} recuperados com sucesso`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`Erro ao obter negócio ID ${dealId}:`, getErrorMessage(error));
+    throw new Error(`Falha ao obter negócio ID ${dealId}: ${getErrorMessage(error)}`);
+  }
+}
+
+async function list_persons({ page = 1, show = 100 }: PaginationParams) {
+  try {
+    console.log(`Listando pessoas: página ${page}, itens por página ${show}`);
+    const response = await axios.get(`${apiUrl}/people`, { 
+      params: { page, show }, 
+      headers: apiConfig.headers 
+    });
+    
+    console.log(`Dados retornados: ${response.data.data.length} pessoas`);
+    return { 
+      persons: response.data.data,
+      meta: response.data.meta
+    };
+  } catch (error) {
+    console.error('Erro ao listar pessoas:', getErrorMessage(error));
+    throw new Error(`Falha ao listar pessoas: ${getErrorMessage(error)}`);
+  }
+}
+
+async function get_person({ personId }: PersonIdParam) {
+  try {
+    console.log(`Obtendo detalhes da pessoa ID: ${personId}`);
+    const response = await axios.get(`${apiUrl}/people/${personId}`, { 
+      headers: apiConfig.headers 
+    });
+    
+    console.log(`Dados da pessoa ID ${personId} recuperados com sucesso`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`Erro ao obter pessoa ID ${personId}:`, getErrorMessage(error));
+    throw new Error(`Falha ao obter pessoa ID ${personId}: ${getErrorMessage(error)}`);
+  }
+}
+
+async function list_organizations({ page = 1, show = 100 }: PaginationParams) {
+  try {
+    console.log(`Listando organizações: página ${page}, itens por página ${show}`);
+    const response = await axios.get(`${apiUrl}/organizations`, { 
+      params: { page, show }, 
+      headers: apiConfig.headers 
+    });
+    
+    console.log(`Dados retornados: ${response.data.data.length} organizações`);
+    return { 
+      organizations: response.data.data,
+      meta: response.data.meta
+    };
+  } catch (error) {
+    console.error('Erro ao listar organizações:', getErrorMessage(error));
+    throw new Error(`Falha ao listar organizações: ${getErrorMessage(error)}`);
+  }
+}
+
+async function get_organization({ organizationId }: OrganizationIdParam) {
+  try {
+    console.log(`Obtendo detalhes da organização ID: ${organizationId}`);
+    const response = await axios.get(`${apiUrl}/organizations/${organizationId}`, { 
+      headers: apiConfig.headers 
+    });
+    
+    console.log(`Dados da organização ID ${organizationId} recuperados com sucesso`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`Erro ao obter organização ID ${organizationId}:`, getErrorMessage(error));
+    throw new Error(`Falha ao obter organização ID ${organizationId}: ${getErrorMessage(error)}`);
+  }
+}
+
+async function list_pipelines({ page = 1, show = 100 }: PaginationParams) {
+  try {
+    console.log(`Listando pipelines: página ${page}, itens por página ${show}`);
+    const response = await axios.get(`${apiUrl}/pipelines`, { 
+      params: { page, show }, 
+      headers: apiConfig.headers 
+    });
+    
+    console.log(`Dados retornados: ${response.data.data.length} pipelines`);
+    return { 
+      pipelines: response.data.data,
+      meta: response.data.meta
+    };
+  } catch (error) {
+    console.error('Erro ao listar pipelines:', getErrorMessage(error));
+    throw new Error(`Falha ao listar pipelines: ${getErrorMessage(error)}`);
+  }
+}
+
+async function get_pipeline({ pipelineId }: PipelineIdParam) {
+  try {
+    console.log(`Obtendo detalhes do pipeline ID: ${pipelineId}`);
+    const response = await axios.get(`${apiUrl}/pipelines/${pipelineId}`, { 
+      headers: apiConfig.headers 
+    });
+    
+    console.log(`Dados do pipeline ID ${pipelineId} recuperados com sucesso`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`Erro ao obter pipeline ID ${pipelineId}:`, getErrorMessage(error));
+    throw new Error(`Falha ao obter pipeline ID ${pipelineId}: ${getErrorMessage(error)}`);
+  }
+}
+
+async function list_stages({ page = 1, show = 100, pipeline_id }: StagesParams) {
+  try {
+    console.log(`Listando estágios: página ${page}, itens por página ${show}`);
+    
+    // Construir parâmetros da consulta
+    const params: Record<string, any> = { page, show };
     if (pipeline_id) params.pipeline_id = pipeline_id;
     
-    const apiToken = getApiToken();
-    const apiUrl = getApiUrl();
-    
-    const response = await axios.get(`${apiUrl}/stages`, {
-      params: {
-        ...params,
-        token: apiToken
-      }
+    const response = await axios.get(`${apiUrl}/stages`, { 
+      params, 
+      headers: apiConfig.headers 
     });
     
-    console.log(`Successfully fetched ${response.data?.data?.length || 0} stages`);
-    return response.data;
+    console.log(`Dados retornados: ${response.data.data.length} estágios`);
+    return { 
+      stages: response.data.data,
+      meta: response.data.meta
+    };
   } catch (error) {
-    console.error('Error fetching stages:', getErrorMessage(error));
-    throw error;
+    console.error('Erro ao listar estágios:', getErrorMessage(error));
+    throw new Error(`Falha ao listar estágios: ${getErrorMessage(error)}`);
   }
 }
 
-async function list_products(page: number = 1, show: number = 100): Promise<any> {
+async function list_products({ page = 1, show = 100 }: PaginationParams) {
   try {
-    console.log(`Fetching products with page=${page}, show=${show}`);
-    
-    const apiToken = getApiToken();
-    const apiUrl = getApiUrl();
-    
-    const response = await axios.get(`${apiUrl}/items`, {
-      params: {
-        page,
-        show,
-        token: apiToken
-      }
+    console.log(`Listando produtos: página ${page}, itens por página ${show}`);
+    const response = await axios.get(`${apiUrl}/items`, { 
+      params: { page, show }, 
+      headers: apiConfig.headers 
     });
     
-    console.log(`Successfully fetched ${response.data?.data?.length || 0} products`);
-    return response.data;
+    console.log(`Dados retornados: ${response.data.data.length} produtos`);
+    return { 
+      products: response.data.data,
+      meta: response.data.meta
+    };
   } catch (error) {
-    console.error('Error fetching products:', getErrorMessage(error));
-    throw error;
+    console.error('Erro ao listar produtos:', getErrorMessage(error));
+    throw new Error(`Falha ao listar produtos: ${getErrorMessage(error)}`);
   }
 }
 
-async function list_persons(page: number = 1, show: number = 100): Promise<any> {
-  try {
-    console.log(`Fetching persons with page=${page}, show=${show}`);
-    
-    const apiToken = getApiToken();
-    const apiUrl = getApiUrl();
-    
-    const response = await axios.get(`${apiUrl}/people`, {
-      params: {
-        page,
-        show,
-        token: apiToken
-      }
-    });
-    
-    console.log(`Successfully fetched ${response.data?.data?.length || 0} persons`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching persons:', getErrorMessage(error));
-    throw error;
-  }
-}
-
-async function list_organizations(page: number = 1, show: number = 100): Promise<any> {
-  try {
-    console.log(`Fetching organizations with page=${page}, show=${show}`);
-    
-    const apiToken = getApiToken();
-    const apiUrl = getApiUrl();
-    
-    const response = await axios.get(`${apiUrl}/organizations`, {
-      params: {
-        page,
-        show,
-        token: apiToken
-      }
-    });
-    
-    console.log(`Successfully fetched ${response.data?.data?.length || 0} organizations`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching organizations:', getErrorMessage(error));
-    throw error;
-  }
-}
-
-// Não verificamos as variáveis de ambiente no início, permitindo que o servidor inicie
-// e que as ferramentas sejam listadas sem autenticação
-// As verificações ocorrem apenas quando as ferramentas são chamadas
-
-// Create MCP server
-const server = new MCP.Server({
-  name: "piperun-mcp-server",
-  version: "1.0.0",
-  capabilities: {
-    resources: {},
-    tools: {},
-    prompts: {}
-  }
+// Definição do Schema Zod para validação de parâmetros
+const PaginationSchema = z.object({
+  page: z.number().optional().default(1),
+  show: z.number().optional().default(100)
 });
 
-// === TOOLS ===
+const DealsQuerySchema = PaginationSchema.extend({
+  pipeline_id: z.number().optional(),
+  stage_id: z.number().optional(),
+  person_id: z.number().optional()
+});
 
-// Get all deals
-server.tool(
-  "get-deals",
-  "Get all deals from Piperun including custom fields",
-  {
-    page: z.number().optional().describe("Page number"),
-    show: z.number().optional().describe("Number of items per page"),
-    pipeline_id: z.number().optional().describe("Pipeline ID"),
-    stage_id: z.number().optional().describe("Stage ID"),
-    person_id: z.number().optional().describe("Person ID")
-  },
-  async ({ page = 1, show = 100, pipeline_id, stage_id, person_id }: { page?: number, show?: number, pipeline_id?: number, stage_id?: number, person_id?: number }) => {
-    try {
-      const response = await list_deals(page, show, pipeline_id, stage_id, person_id);
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error("Error fetching deals:", error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching deals: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+const StagesQuerySchema = PaginationSchema.extend({
+  pipeline_id: z.number().optional()
+});
+
+const IdSchema = z.object({
+  dealId: z.number()
+});
+
+const PersonIdSchema = z.object({
+  personId: z.number()
+});
+
+const OrganizationIdSchema = z.object({
+  organizationId: z.number()
+});
+
+const PipelineIdSchema = z.object({
+  pipelineId: z.number()
+});
+
+// Configuração do servidor MCP
+console.log("Iniciando servidor MCP para integração com o Piperun...");
+
+// Criar uma instância básica do servidor MCP
+const server = new McpServer();
+
+// Registrar funções no servidor MCP
+server.addTool(
+  "list-deals",
+  "Lista os negócios (deals) do Piperun com suporte a paginação e filtros",
+  DealsQuerySchema,
+  list_deals
 );
 
-// Get deal by ID
-server.tool(
+server.addTool(
   "get-deal",
-  "Get a specific deal by ID including custom fields",
-  {
-    dealId: z.number().describe("Piperun deal ID")
-  },
-  async ({ dealId }: { dealId: number }) => {
-    try {
-      const apiToken = getApiToken();
-      const apiUrl = getApiUrl();
-      
-      const response = await axios.get(`${apiUrl}/deals/${dealId}`, {
-        params: {
-          token: apiToken
-        }
-      });
-      
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response.data, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error(`Error fetching deal ${dealId}:`, error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching deal ${dealId}: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+  "Obtém os detalhes de um negócio específico pelo ID",
+  IdSchema,
+  get_deal
 );
 
-// Get all persons
-server.tool(
-  "get-persons",
-  "Get all persons from Piperun including custom fields",
-  {
-    page: z.number().optional().describe("Page number"),
-    show: z.number().optional().describe("Number of items per page")
-  },
-  async ({ page = 1, show = 100 }: { page?: number, show?: number }) => {
-    try {
-      const response = await list_persons(page, show);
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error("Error fetching persons:", error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching persons: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+server.addTool(
+  "list-persons",
+  "Lista as pessoas (contatos) do Piperun com suporte a paginação",
+  PaginationSchema,
+  list_persons
 );
 
-// Get person by ID
-server.tool(
+server.addTool(
   "get-person",
-  "Get a specific person by ID including custom fields",
-  {
-    personId: z.number().describe("Piperun person ID")
-  },
-  async ({ personId }: { personId: number }) => {
-    try {
-      const apiToken = getApiToken();
-      const apiUrl = getApiUrl();
-      
-      const response = await axios.get(`${apiUrl}/people/${personId}`, {
-        params: {
-          token: apiToken
-        }
-      });
-      
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response.data, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error(`Error fetching person ${personId}:`, error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching person ${personId}: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+  "Obtém os detalhes de uma pessoa (contato) específica pelo ID",
+  PersonIdSchema,
+  get_person
 );
 
-// Get all organizations
-server.tool(
-  "get-organizations",
-  "Get all organizations from Piperun including custom fields",
-  {
-    page: z.number().optional().describe("Page number"),
-    show: z.number().optional().describe("Number of items per page")
-  },
-  async ({ page = 1, show = 100 }: { page?: number, show?: number }) => {
-    try {
-      const response = await list_organizations(page, show);
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error("Error fetching organizations:", error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching organizations: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+server.addTool(
+  "list-organizations",
+  "Lista as organizações do Piperun com suporte a paginação",
+  PaginationSchema,
+  list_organizations
 );
 
-// Get organization by ID
-server.tool(
+server.addTool(
   "get-organization",
-  "Get a specific organization by ID including custom fields",
-  {
-    organizationId: z.number().describe("Piperun organization ID")
-  },
-  async ({ organizationId }: { organizationId: number }) => {
-    try {
-      const apiToken = getApiToken();
-      const apiUrl = getApiUrl();
-      
-      const response = await axios.get(`${apiUrl}/organizations/${organizationId}`, {
-        params: {
-          token: apiToken
-        }
-      });
-      
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response.data, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error(`Error fetching organization ${organizationId}:`, error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching organization ${organizationId}: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+  "Obtém os detalhes de uma organização específica pelo ID",
+  OrganizationIdSchema,
+  get_organization
 );
 
-// Get all pipelines
-server.tool(
-  "get-pipelines",
-  "Get all pipelines from Piperun",
-  {
-    page: z.number().optional().describe("Page number"),
-    show: z.number().optional().describe("Number of items per page")
-  },
-  async ({ page = 1, show = 100 }: { page?: number, show?: number }) => {
-    try {
-      const response = await list_pipelines(page, show);
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error("Error fetching pipelines:", error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching pipelines: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+server.addTool(
+  "list-pipelines",
+  "Lista os pipelines do Piperun com suporte a paginação",
+  PaginationSchema,
+  list_pipelines
 );
 
-// Get pipeline by ID
-server.tool(
+server.addTool(
   "get-pipeline",
-  "Get a specific pipeline by ID",
-  {
-    pipelineId: z.number().describe("Piperun pipeline ID")
-  },
-  async ({ pipelineId }: { pipelineId: number }) => {
-    try {
-      const apiToken = getApiToken();
-      const apiUrl = getApiUrl();
-      
-      const response = await axios.get(`${apiUrl}/pipelines/${pipelineId}`, {
-        params: {
-          token: apiToken
-        }
-      });
-      
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response.data, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error(`Error fetching pipeline ${pipelineId}:`, error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching pipeline ${pipelineId}: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+  "Obtém os detalhes de um pipeline específico pelo ID",
+  PipelineIdSchema,
+  get_pipeline
 );
 
-// Get all stages
-server.tool(
-  "get-stages",
-  "Get all stages from Piperun",
-  {
-    page: z.number().optional().describe("Page number"),
-    show: z.number().optional().describe("Number of items per page"),
-    pipeline_id: z.number().optional().describe("Pipeline ID")
-  },
-  async ({ page = 1, show = 100, pipeline_id }: { page?: number, show?: number, pipeline_id?: number }) => {
-    try {
-      const response = await list_stages(page, show, pipeline_id);
-      
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error("Error fetching stages:", error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching stages: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+server.addTool(
+  "list-stages",
+  "Lista os estágios do Piperun com suporte a paginação e filtro por pipeline",
+  StagesQuerySchema,
+  list_stages
 );
 
-// Get all products
-server.tool(
-  "get-products",
-  "Get all products from Piperun",
-  {
-    page: z.number().optional().describe("Page number"),
-    show: z.number().optional().describe("Number of items per page")
-  },
-  async ({ page = 1, show = 100 }: { page?: number, show?: number }) => {
-    try {
-      const response = await list_products(page, show);
-      
-      return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(response, null, 2)
-        }]
-      };
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      return {
-        content: [{
-          type: "text",
-          text: `Error fetching products: ${getErrorMessage(error)}`
-        }],
-        isError: true
-      };
-    }
-  }
+server.addTool(
+  "list-products",
+  "Lista os produtos (items) do Piperun com suporte a paginação",
+  PaginationSchema,
+  list_products
 );
 
-// === PROMPTS ===
-
-// Prompt for getting all deals
-server.prompt(
-  "list-all-deals",
-  "List all deals in Piperun",
-  {},
-  () => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: "Por favor, liste todos os negócios na minha conta do Piperun, mostrando o título, valor, status e etapa."
-      }
-    }]
-  })
-);
-
-// Prompt for getting all persons
-server.prompt(
-  "list-all-persons",
-  "List all persons in Piperun",
-  {},
-  () => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: "Por favor, liste todas as pessoas na minha conta do Piperun, mostrando o nome, e-mail, telefone e organização."
-      }
-    }]
-  })
-);
-
-// Prompt for getting all pipelines
-server.prompt(
-  "list-all-pipelines",
-  "List all pipelines in Piperun",
-  {},
-  () => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: "Por favor, liste todos os funis na minha conta do Piperun, mostrando o nome e as etapas."
-      }
-    }]
-  })
-);
-
-// Prompt for analyzing deals
-server.prompt(
-  "analyze-deals",
-  "Analyze deals by stage",
-  {},
-  () => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: "Por favor, analise os negócios na minha conta do Piperun, agrupando-os por etapa e fornecendo o valor total para cada etapa."
-      }
-    }]
-  })
-);
-
-// Prompt for analyzing contacts
-server.prompt(
-  "analyze-contacts",
-  "Analyze contacts by organization",
-  {},
-  () => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: "Por favor, analise as pessoas na minha conta do Piperun, agrupando-as por organização e fornecendo uma contagem para cada organização."
-      }
-    }]
-  })
-);
-
-// Prompt for pipeline comparison
-server.prompt(
-  "compare-pipelines",
-  "Compare different pipelines and their stages",
-  {},
-  () => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: "Por favor, liste todos os funis na minha conta do Piperun e compare-os mostrando as etapas em cada funil."
-      }
-    }]
-  })
-);
-
-// Prompt for product analysis
-server.prompt(
-  "analyze-products",
-  "Analyze products by category",
-  {},
-  () => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: "Por favor, liste todos os produtos na minha conta do Piperun e agrupe-os por categoria, mostrando o preço total para cada categoria."
-      }
-    }]
-  })
-);
-
-// Modificar o início do servidor para usar WebSocket sempre no Smithery
-// Start the server with WebSocket transport for Smithery.ai
-console.log("Starting MCP server for Piperun integration");
-
-// No ambiente Smithery, o servidor precisa escutar na porta fornecida pelo ambiente
+// Usar o transporte WebSocket padrão do SDK
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-console.log(`Starting server on port ${port}`);
+console.log(`Iniciando servidor na porta ${port}`);
 
-// Implementação robusta do WebSocket seguindo o protocolo MCP
+// Criar instância do servidor WebSocket
 const wss = new WS.Server({ port });
+console.log(`Servidor WebSocket iniciado na porta ${port}`);
 
-// Objeto para armazenar clientes ativos
-const clients = new Map();
+// Iniciar o servidor
+server.start();
+console.log("Servidor MCP iniciado com sucesso");
 
-server.start({
-  onRequest: (request: any) => {
-    console.log('Enviando requisição para os clientes:', request.id);
-    wss.clients.forEach((client: any) => {
-      if (client.readyState === WS.OPEN) {
-        try {
-          client.send(JSON.stringify(request));
-        } catch (error) {
-          console.error('Erro ao enviar mensagem para cliente:', error);
-        }
-      }
-    });
-  }
-});
-
-// Gerenciamento de conexões WebSocket
+// Gerenciar conexões WebSocket
 wss.on('connection', (ws: any) => {
-  const clientId = Date.now().toString();
-  clients.set(clientId, ws);
-  console.log(`Nova conexão estabelecida (ID: ${clientId}). Total de clientes: ${clients.size}`);
+  console.log('Novo cliente conectado');
   
-  // Enviar mensagem de teste para verificar conexão
-  try {
-    ws.send(JSON.stringify({ type: 'connection_status', status: 'connected' }));
-  } catch (error) {
-    console.error('Erro ao enviar mensagem de status:', error);
-  }
+  // Enviar mensagem de confirmação
+  ws.send(JSON.stringify({ type: 'connection', status: 'connected', timestamp: new Date().toISOString() }));
   
   ws.on('message', (message: any) => {
     try {
-      console.log(`Mensagem recebida do cliente ${clientId}:`, message.toString().substring(0, 100) + '...');
+      console.log('Mensagem recebida:', message.toString().substring(0, 150));
       const data = JSON.parse(message.toString());
       
-      // Verificar se a mensagem segue o formato MCP
-      if (!data.jsonrpc && !data.id && !data.method) {
-        console.log('Mensagem não segue formato MCP:', data);
-      }
-      
       server.handleMessage(data, (response: any) => {
-        if (ws.readyState === WS.OPEN) {
-          try {
-            console.log(`Enviando resposta para cliente ${clientId}:`, 
-              JSON.stringify(response).substring(0, 100) + '...');
-            ws.send(JSON.stringify(response));
-          } catch (error) {
-            console.error(`Erro ao enviar resposta para cliente ${clientId}:`, error);
-          }
-        } else {
-          console.warn(`Cliente ${clientId} não está conectado (readyState: ${ws.readyState})`);
+        try {
+          console.log('Enviando resposta:', JSON.stringify(response).substring(0, 150));
+          ws.send(JSON.stringify(response));
+        } catch (error) {
+          console.error('Erro ao enviar resposta:', getErrorMessage(error));
         }
       });
     } catch (error) {
-      console.error(`Erro ao processar mensagem do cliente ${clientId}:`, error);
-      // Enviar erro de volta para o cliente
-      if (ws.readyState === WS.OPEN) {
-        try {
-          ws.send(JSON.stringify({
-            jsonrpc: "2.0",
-            error: {
-              code: -32700,
-              message: "Parse error: " + getErrorMessage(error)
-            },
-            id: null
-          }));
-        } catch (sendError) {
-          console.error('Erro ao enviar mensagem de erro:', sendError);
-        }
+      console.error('Erro ao processar mensagem:', getErrorMessage(error));
+      
+      // Enviar resposta de erro formatada
+      const errorResponse = {
+        jsonrpc: "2.0",
+        error: {
+          code: -32700,
+          message: `Erro no processamento: ${getErrorMessage(error)}`
+        },
+        id: null
+      };
+      
+      try {
+        ws.send(JSON.stringify(errorResponse));
+      } catch (sendError) {
+        console.error('Erro ao enviar resposta de erro:', getErrorMessage(sendError));
       }
     }
   });
   
   ws.on('close', (code: number, reason: string) => {
-    clients.delete(clientId);
-    console.log(`Cliente ${clientId} desconectado. Código: ${code}, Motivo: ${reason || 'Não especificado'}`);
-    console.log(`Total de clientes restantes: ${clients.size}`);
+    console.log(`Cliente desconectado. Código: ${code}, Motivo: ${reason || 'Não especificado'}`);
   });
   
   ws.on('error', (error: any) => {
-    console.error(`Erro na conexão WebSocket com cliente ${clientId}:`, error);
+    console.error('Erro na conexão WebSocket:', getErrorMessage(error));
   });
 });
