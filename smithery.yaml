@@ -1,0 +1,27 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+build:
+  dockerfile: Dockerfile
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - apiToken
+    properties:
+      apiToken:
+        type: string
+        description: Token de API do PipeRun
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |
+    function generateCommand(config) {
+      return {
+        command: "bash",
+        args: ["-c", "source venv/bin/activate && python server.py"],
+        env: {
+          PIPERUN_API_TOKEN: config.apiToken
+        }
+      };
+    }
