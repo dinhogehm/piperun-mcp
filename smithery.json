@@ -1,15 +1,14 @@
 {
   "name": "piperun-mcp-server",
   "description": "Servidor MCP para integração com o CRM Piperun",
+  "type": "mcp",
   "entrypoint": "src/index.ts",
   "build": {
-    "command": "npm install && npm run build",
-    "dockerfile": "./Dockerfile"
+    "command": "npm install && npm run build"
   },
   "start": {
     "command": "node dist/index.js",
     "env": {
-      "SMITHERY": "true",
       "NODE_ENV": "production"
     }
   },

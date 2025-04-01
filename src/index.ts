@@ -683,14 +683,13 @@ server.prompt(
   })
 );
 
-// Modificar o início do servidor para usar WebSocket em vez de STDIO
+// Modificar o início do servidor para usar WebSocket sempre no Smithery
 // Start the server with WebSocket transport for Smithery.ai
-// Detecta se está rodando em ambiente local ou no smithery.ai
-if (process.env.NODE_ENV === "production" || process.env.SMITHERY === "true") {
-  console.log("Starting server with WebSocket transport for Smithery.ai deployment");
-  const port = process.env.PORT || 3000;
-  server.start(new WebSocketServerTransport({ port: parseInt(port.toString()) }));
-} else {
-  console.log("Starting server with STDIO transport for local development");
-  server.start(new StdioServerTransport());
-}
+console.log("Starting MCP server for Piperun integration");
+
+// No ambiente Smithery, o servidor precisa escutar na porta fornecida pelo ambiente
+const port = Number(process.env.PORT) || 3000;
+console.log(`Starting server on port ${port}`);
+
+// Usar WebSocket para conformidade com o Smithery.ai
+server.start(new WebSocketServerTransport({ port }));
