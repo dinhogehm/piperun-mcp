@@ -1,9 +1,9 @@
-// Importações diretas para os arquivos do SDK usando a estrutura correta
-const { McpServer } = require('@modelcontextprotocol/sdk/dist/cjs/server/server');
-const { WebSocketServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/server/transports/websocket');
+// Importações simplificadas usando apenas o módulo principal
+const { Server } = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
 const { z } = require('zod');
 const axios = require('axios');
 const dotenv = require('dotenv');
+const WebSocket = require('ws');
 
 // Type for error handling
 interface ErrorWithMessage {
@@ -223,7 +223,7 @@ async function list_organizations(page: number = 1, show: number = 100): Promise
 // As verificações ocorrem apenas quando as ferramentas são chamadas
 
 // Create MCP server
-const server = new McpServer({
+const server = new Server({
   name: "piperun-mcp-server",
   version: "1.0.0",
   capabilities: {
@@ -688,8 +688,38 @@ server.prompt(
 console.log("Starting MCP server for Piperun integration");
 
 // No ambiente Smithery, o servidor precisa escutar na porta fornecida pelo ambiente
-const port = Number(process.env.PORT) || 3000;
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 console.log(`Starting server on port ${port}`);
 
-// Usar WebSocket para conformidade com o Smithery.ai
-server.start(new WebSocketServerTransport({ port }));
+// Instanciar o servidor WebSocket diretamente
+const wss = new WebSocket.Server({ port });
+server.start({
+  onRequest: (req) => {
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(req));
+      }
+    });
+  }
+});
+
+wss.on('connection', (ws) => {
+  console.log('New client connected');
+  
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      server.handleMessage(data, (response) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(response));
+        }
+      });
+    } catch (error) {
+      console.error('Error handling message:', error);
+    }
+  });
+  
+  ws.on('close', () => {
+    console.log('Client disconnected');
+  });
+});
