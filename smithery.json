@@ -3,7 +3,8 @@
   "description": "Servidor MCP para integração com o CRM Piperun",
   "entrypoint": "src/index.ts",
   "build": {
-    "command": "npm install && npm run build"
+    "command": "npm install && npm run build",
+    "dockerfile": "./Dockerfile"
   },
   "start": {
     "command": "node dist/index.js",
