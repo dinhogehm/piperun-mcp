@@ -1,552 +1,256 @@
-// Importações essenciais
-const axios = require('axios');
-const { z } = require('zod');
-const dotenv = require('dotenv');
-const WS = require('ws');
+import axios from 'axios';
+import * as dotenv from 'dotenv';
+import { z } from 'zod';
 
-// Configurações
+// Carregar variáveis de ambiente
 dotenv.config();
-const apiToken = process.env.PIPERUN_API_TOKEN;
-const apiUrl = process.env.PIPERUN_API_URL || 'https://api.piperun.com/v1';
-const apiConfig = {
-  headers: {
-    'Authorization': `Bearer ${apiToken}`
-  }
-};
+const PIPERUN_API_URL = process.env.PIPERUN_API_URL || 'https://api.piperun.com/v1';
+const PIPERUN_API_TOKEN = process.env.PIPERUN_API_TOKEN;
 
-if (!apiToken) {
-  console.error('Token da API Piperun não configurado! Defina a variável de ambiente PIPERUN_API_TOKEN.');
+if (!PIPERUN_API_TOKEN) {
+  console.error('Erro: PIPERUN_API_TOKEN não configurado');
   process.exit(1);
 }
 
-console.log('Conectando à API Piperun:', apiUrl);
+console.error(`Conectando à API Piperun: ${PIPERUN_API_URL}`);
 
-// Interfaces
-interface PaginationParams {
-  page?: number;
-  show?: number;
-}
+/**
+ * Cliente HTTP para a API do Piperun
+ */
+class PiperunApiClient {
+  private baseUrl: string;
+  private apiToken: string;
 
-interface DealsParams extends PaginationParams {
-  pipeline_id?: number;
-  stage_id?: number;
-  person_id?: number;
-}
-
-interface StagesParams extends PaginationParams {
-  pipeline_id?: number;
-}
-
-interface IdParam {
-  dealId: number;
-}
-
-interface PersonIdParam {
-  personId: number;
-}
-
-interface OrganizationIdParam {
-  organizationId: number;
-}
-
-interface PipelineIdParam {
-  pipelineId: number;
-}
-
-// Utilitários
-function getErrorMessage(error: any): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
-}
-
-// Funções para interação com a API Piperun
-async function list_deals({ page = 1, show = 100, pipeline_id, stage_id, person_id }: DealsParams) {
-  try {
-    console.log(`Listando negócios: página ${page}, itens por página ${show}`);
-    
-    // Construir parâmetros da consulta
-    const params: Record<string, any> = { page, show };
-    if (pipeline_id) params.pipeline_id = pipeline_id;
-    if (stage_id) params.stage_id = stage_id;
-    if (person_id) params.person_id = person_id;
-    
-    const response = await axios.get(`${apiUrl}/deals`, { 
-      params, 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados retornados: ${response.data.data.length} negócios`);
-    return { 
-      deals: response.data.data,
-      meta: response.data.meta
-    };
-  } catch (error) {
-    console.error('Erro ao listar negócios:', getErrorMessage(error));
-    throw new Error(`Falha ao listar negócios: ${getErrorMessage(error)}`);
+  constructor(baseUrl: string, apiToken: string) {
+    this.baseUrl = baseUrl;
+    this.apiToken = apiToken;
   }
-}
 
-async function get_deal({ dealId }: IdParam) {
-  try {
-    console.log(`Obtendo detalhes do negócio ID: ${dealId}`);
-    const response = await axios.get(`${apiUrl}/deals/${dealId}`, { 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados do negócio ID ${dealId} recuperados com sucesso`);
-    return response.data.data;
-  } catch (error) {
-    console.error(`Erro ao obter negócio ID ${dealId}:`, getErrorMessage(error));
-    throw new Error(`Falha ao obter negócio ID ${dealId}: ${getErrorMessage(error)}`);
-  }
-}
-
-async function list_persons({ page = 1, show = 100 }: PaginationParams) {
-  try {
-    console.log(`Listando pessoas: página ${page}, itens por página ${show}`);
-    const response = await axios.get(`${apiUrl}/people`, { 
-      params: { page, show }, 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados retornados: ${response.data.data.length} pessoas`);
-    return { 
-      persons: response.data.data,
-      meta: response.data.meta
-    };
-  } catch (error) {
-    console.error('Erro ao listar pessoas:', getErrorMessage(error));
-    throw new Error(`Falha ao listar pessoas: ${getErrorMessage(error)}`);
-  }
-}
-
-async function get_person({ personId }: PersonIdParam) {
-  try {
-    console.log(`Obtendo detalhes da pessoa ID: ${personId}`);
-    const response = await axios.get(`${apiUrl}/people/${personId}`, { 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados da pessoa ID ${personId} recuperados com sucesso`);
-    return response.data.data;
-  } catch (error) {
-    console.error(`Erro ao obter pessoa ID ${personId}:`, getErrorMessage(error));
-    throw new Error(`Falha ao obter pessoa ID ${personId}: ${getErrorMessage(error)}`);
-  }
-}
-
-async function list_organizations({ page = 1, show = 100 }: PaginationParams) {
-  try {
-    console.log(`Listando organizações: página ${page}, itens por página ${show}`);
-    const response = await axios.get(`${apiUrl}/organizations`, { 
-      params: { page, show }, 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados retornados: ${response.data.data.length} organizações`);
-    return { 
-      organizations: response.data.data,
-      meta: response.data.meta
-    };
-  } catch (error) {
-    console.error('Erro ao listar organizações:', getErrorMessage(error));
-    throw new Error(`Falha ao listar organizações: ${getErrorMessage(error)}`);
-  }
-}
-
-async function get_organization({ organizationId }: OrganizationIdParam) {
-  try {
-    console.log(`Obtendo detalhes da organização ID: ${organizationId}`);
-    const response = await axios.get(`${apiUrl}/organizations/${organizationId}`, { 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados da organização ID ${organizationId} recuperados com sucesso`);
-    return response.data.data;
-  } catch (error) {
-    console.error(`Erro ao obter organização ID ${organizationId}:`, getErrorMessage(error));
-    throw new Error(`Falha ao obter organização ID ${organizationId}: ${getErrorMessage(error)}`);
-  }
-}
-
-async function list_pipelines({ page = 1, show = 100 }: PaginationParams) {
-  try {
-    console.log(`Listando pipelines: página ${page}, itens por página ${show}`);
-    const response = await axios.get(`${apiUrl}/pipelines`, { 
-      params: { page, show }, 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados retornados: ${response.data.data.length} pipelines`);
-    return { 
-      pipelines: response.data.data,
-      meta: response.data.meta
-    };
-  } catch (error) {
-    console.error('Erro ao listar pipelines:', getErrorMessage(error));
-    throw new Error(`Falha ao listar pipelines: ${getErrorMessage(error)}`);
-  }
-}
-
-async function get_pipeline({ pipelineId }: PipelineIdParam) {
-  try {
-    console.log(`Obtendo detalhes do pipeline ID: ${pipelineId}`);
-    const response = await axios.get(`${apiUrl}/pipelines/${pipelineId}`, { 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados do pipeline ID ${pipelineId} recuperados com sucesso`);
-    return response.data.data;
-  } catch (error) {
-    console.error(`Erro ao obter pipeline ID ${pipelineId}:`, getErrorMessage(error));
-    throw new Error(`Falha ao obter pipeline ID ${pipelineId}: ${getErrorMessage(error)}`);
-  }
-}
-
-async function list_stages({ page = 1, show = 100, pipeline_id }: StagesParams) {
-  try {
-    console.log(`Listando estágios: página ${page}, itens por página ${show}`);
-    
-    // Construir parâmetros da consulta
-    const params: Record<string, any> = { page, show };
-    if (pipeline_id) params.pipeline_id = pipeline_id;
-    
-    const response = await axios.get(`${apiUrl}/stages`, { 
-      params, 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados retornados: ${response.data.data.length} estágios`);
-    return { 
-      stages: response.data.data,
-      meta: response.data.meta
-    };
-  } catch (error) {
-    console.error('Erro ao listar estágios:', getErrorMessage(error));
-    throw new Error(`Falha ao listar estágios: ${getErrorMessage(error)}`);
-  }
-}
-
-async function list_products({ page = 1, show = 100 }: PaginationParams) {
-  try {
-    console.log(`Listando produtos: página ${page}, itens por página ${show}`);
-    const response = await axios.get(`${apiUrl}/items`, { 
-      params: { page, show }, 
-      headers: apiConfig.headers 
-    });
-    
-    console.log(`Dados retornados: ${response.data.data.length} produtos`);
-    return { 
-      products: response.data.data,
-      meta: response.data.meta
-    };
-  } catch (error) {
-    console.error('Erro ao listar produtos:', getErrorMessage(error));
-    throw new Error(`Falha ao listar produtos: ${getErrorMessage(error)}`);
-  }
-}
-
-// =============================================================
-// IMPLEMENTAÇÃO SIMPLIFICADA DO SERVIDOR MCP
-// =============================================================
-
-// Classe que define um servidor MCP simples
-class SimpleServer {
-  private tools: Map<string, any>;
-  private toolDefs: Map<string, any>;
-  
-  constructor() {
-    this.tools = new Map();
-    this.toolDefs = new Map();
-    console.log("Servidor MCP simples inicializado");
-  }
-  
-  // Adicionar uma ferramenta ao servidor
-  addTool(id: string, description: string, schema: any, handler: Function) {
-    this.tools.set(id, handler);
-    this.toolDefs.set(id, {
-      id,
-      description,
-      schema
-    });
-    console.log(`Ferramenta registrada: ${id}`);
-  }
-  
-  // Iniciar o servidor
-  start() {
-    console.log("Servidor MCP iniciado com as seguintes ferramentas:");
-    for (const [id, def] of this.toolDefs.entries()) {
-      console.log(`- ${id}: ${def.description}`);
+  async get(endpoint: string, params?: Record<string, any>) {
+    try {
+      const url = `${this.baseUrl}${endpoint}`;
+      console.error(`Fazendo requisição GET para: ${url} com parâmetros:`, params);
+      
+      const response = await axios.get(url, {
+        params: {
+          ...params,
+          api_token: this.apiToken,
+        },
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Erro na requisição GET para ${endpoint}:`, error);
+      throw error;
     }
   }
-  
-  // Manipular uma mensagem JSON-RPC
-  async handleMessage(message: any, callback: Function) {
-    try {
-      // Verificar se a mensagem segue o formato JSON-RPC
-      if (!message.jsonrpc || !message.id || !message.method) {
-        return callback({
-          jsonrpc: "2.0",
-          error: {
-            code: -32600,
-            message: "Mensagem não segue o formato JSON-RPC"
-          },
-          id: message.id || null
-        });
-      }
-      
-      // Verificar se o método é para execução de ferramenta
-      if (message.method === "execute") {
-        const toolId = message.params?.id;
-        const toolParams = message.params?.arguments || {};
-        
-        // Verificar se a ferramenta existe
-        if (!this.tools.has(toolId)) {
-          return callback({
-            jsonrpc: "2.0",
-            error: {
-              code: -32601,
-              message: `Ferramenta não encontrada: ${toolId}`
-            },
-            id: message.id
-          });
-        }
-        
-        try {
-          // Executar a ferramenta
-          console.log(`Executando ferramenta ${toolId} com parâmetros:`, toolParams);
-          const handler = this.tools.get(toolId);
-          const result = await handler(toolParams);
-          
-          // Retornar o resultado
-          return callback({
-            jsonrpc: "2.0",
-            result: {
-              ...result
-            },
-            id: message.id
-          });
-        } catch (error) {
-          // Erro durante a execução da ferramenta
-          console.error(`Erro ao executar ferramenta ${toolId}:`, getErrorMessage(error));
-          return callback({
-            jsonrpc: "2.0",
-            error: {
-              code: -32000,
-              message: `Erro ao executar ferramenta: ${getErrorMessage(error)}`
-            },
-            id: message.id
-          });
-        }
-      } else if (message.method === "list_tools") {
-        // Listar todas as ferramentas disponíveis
-        const tools = Array.from(this.toolDefs.values());
-        return callback({
-          jsonrpc: "2.0",
-          result: { tools },
-          id: message.id
-        });
+}
+
+const apiClient = new PiperunApiClient(PIPERUN_API_URL, PIPERUN_API_TOKEN);
+
+/**
+ * Implementação das ferramentas
+ */
+
+// Listar Negócios
+async function list_deals(params: any) {
+  try {
+    console.error('Listando negócios com parâmetros:', params);
+    return await apiClient.get('/deals', params);
+  } catch (error) {
+    console.error('Erro ao listar negócios:', error);
+    throw error;
+  }
+}
+
+// Obter Negócio
+async function get_deal(params: any) {
+  try {
+    console.error(`Obtendo negócio ID: ${params.dealId}`);
+    return await apiClient.get(`/deals/${params.dealId}`);
+  } catch (error) {
+    console.error(`Erro ao obter negócio ID ${params.dealId}:`, error);
+    throw error;
+  }
+}
+
+// Listar Pessoas
+async function list_persons(params: any) {
+  try {
+    console.error('Listando pessoas com parâmetros:', params);
+    return await apiClient.get('/persons', params);
+  } catch (error) {
+    console.error('Erro ao listar pessoas:', error);
+    throw error;
+  }
+}
+
+// Obter Pessoa
+async function get_person(params: any) {
+  try {
+    console.error(`Obtendo pessoa ID: ${params.personId}`);
+    return await apiClient.get(`/persons/${params.personId}`);
+  } catch (error) {
+    console.error(`Erro ao obter pessoa ID ${params.personId}:`, error);
+    throw error;
+  }
+}
+
+// Listar Organizações
+async function list_organizations(params: any) {
+  try {
+    console.error('Listando organizações com parâmetros:', params);
+    return await apiClient.get('/organizations', params);
+  } catch (error) {
+    console.error('Erro ao listar organizações:', error);
+    throw error;
+  }
+}
+
+// Obter Organização
+async function get_organization(params: any) {
+  try {
+    console.error(`Obtendo organização ID: ${params.organizationId}`);
+    return await apiClient.get(`/organizations/${params.organizationId}`);
+  } catch (error) {
+    console.error(`Erro ao obter organização ID ${params.organizationId}:`, error);
+    throw error;
+  }
+}
+
+// Listar Pipelines
+async function list_pipelines(params: any) {
+  try {
+    console.error('Listando pipelines com parâmetros:', params);
+    return await apiClient.get('/pipelines', params);
+  } catch (error) {
+    console.error('Erro ao listar pipelines:', error);
+    throw error;
+  }
+}
+
+// Obter Pipeline
+async function get_pipeline(params: any) {
+  try {
+    console.error(`Obtendo pipeline ID: ${params.pipelineId}`);
+    return await apiClient.get(`/pipelines/${params.pipelineId}`);
+  } catch (error) {
+    console.error(`Erro ao obter pipeline ID ${params.pipelineId}:`, error);
+    throw error;
+  }
+}
+
+// Listar Estágios
+async function list_stages(params: any) {
+  try {
+    console.error('Listando estágios com parâmetros:', params);
+    return await apiClient.get('/stages', params);
+  } catch (error) {
+    console.error('Erro ao listar estágios:', error);
+    throw error;
+  }
+}
+
+// Listar Produtos
+async function list_products(params: any) {
+  try {
+    console.error('Listando produtos com parâmetros:', params);
+    return await apiClient.get('/items', params); // Endpoint correto: /items
+  } catch (error) {
+    console.error('Erro ao listar produtos:', error);
+    throw error;
+  }
+}
+
+/**
+ * Mapeamento de ferramentas para funções
+ */
+const toolHandlers: Record<string, Function> = {
+  'list-deals': list_deals,
+  'get-deal': get_deal,
+  'list-persons': list_persons,
+  'get-person': get_person,
+  'list-organizations': list_organizations,
+  'get-organization': get_organization,
+  'list-pipelines': list_pipelines,
+  'get-pipeline': get_pipeline,
+  'list-stages': list_stages,
+  'list-products': list_products
+};
+
+/**
+ * Processador de comandos JSON-RPC
+ */
+async function processCommand(command: string) {
+  try {
+    // Converter string para JSON
+    const request = JSON.parse(command);
+    const { id, method, params } = request;
+
+    console.error(`Processando comando: ${method}`, id);
+
+    // Procurar o método no formato execute.{ferramenta}
+    if (method.startsWith('execute.')) {
+      const toolId = method.substring('execute.'.length);
+      const handler = toolHandlers[toolId];
+
+      if (handler) {
+        console.error(`Executando ferramenta: ${toolId}`, params);
+        const result = await handler(params);
+        return JSON.stringify({ id, result });
       } else {
-        // Método desconhecido
-        return callback({
-          jsonrpc: "2.0",
-          error: {
-            code: -32601,
-            message: `Método desconhecido: ${message.method}`
-          },
-          id: message.id
+        console.error(`Ferramenta não encontrada: ${toolId}`);
+        return JSON.stringify({
+          id,
+          error: { code: -32601, message: `Ferramenta não encontrada: ${toolId}` }
         });
       }
-    } catch (error) {
-      // Erro ao processar a mensagem
-      console.error("Erro ao processar mensagem:", getErrorMessage(error));
-      return callback({
-        jsonrpc: "2.0",
-        error: {
-          code: -32700,
-          message: `Erro ao processar mensagem: ${getErrorMessage(error)}`
-        },
-        id: message.id || null
-      });
     }
+
+    // Método desconhecido
+    return JSON.stringify({
+      id,
+      error: { code: -32601, message: `Método desconhecido: ${method}` }
+    });
+  } catch (error) {
+    console.error('Erro ao processar comando:', error);
+    return JSON.stringify({
+      error: { code: -32700, message: 'Erro de parse JSON' }
+    });
   }
 }
 
-// =============================================================
-// INSTANCIAR E CONFIGURAR O SERVIDOR
-// =============================================================
+/**
+ * Configuração da entrada/saída
+ */
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// Definição do Schema Zod para validação de parâmetros
-const PaginationSchema = z.object({
-  page: z.number().optional().default(1),
-  show: z.number().optional().default(100)
-});
+// Buffer para entrada
+let inputBuffer = '';
 
-const DealsQuerySchema = PaginationSchema.extend({
-  pipeline_id: z.number().optional(),
-  stage_id: z.number().optional(),
-  person_id: z.number().optional()
-});
-
-const StagesQuerySchema = PaginationSchema.extend({
-  pipeline_id: z.number().optional()
-});
-
-const IdSchema = z.object({
-  dealId: z.number()
-});
-
-const PersonIdSchema = z.object({
-  personId: z.number()
-});
-
-const OrganizationIdSchema = z.object({
-  organizationId: z.number()
-});
-
-const PipelineIdSchema = z.object({
-  pipelineId: z.number()
-});
-
-// Configuração do servidor MCP
-console.log("Iniciando servidor MCP para integração com o Piperun...");
-
-// Criar uma instância básica do servidor MCP
-const server = new SimpleServer();
-
-// Registrar funções no servidor MCP
-server.addTool(
-  "list-deals",
-  "Lista os negócios (deals) do Piperun com suporte a paginação e filtros",
-  DealsQuerySchema,
-  list_deals
-);
-
-server.addTool(
-  "get-deal",
-  "Obtém os detalhes de um negócio específico pelo ID",
-  IdSchema,
-  get_deal
-);
-
-server.addTool(
-  "list-persons",
-  "Lista as pessoas (contatos) do Piperun com suporte a paginação",
-  PaginationSchema,
-  list_persons
-);
-
-server.addTool(
-  "get-person",
-  "Obtém os detalhes de uma pessoa (contato) específica pelo ID",
-  PersonIdSchema,
-  get_person
-);
-
-server.addTool(
-  "list-organizations",
-  "Lista as organizações do Piperun com suporte a paginação",
-  PaginationSchema,
-  list_organizations
-);
-
-server.addTool(
-  "get-organization",
-  "Obtém os detalhes de uma organização específica pelo ID",
-  OrganizationIdSchema,
-  get_organization
-);
-
-server.addTool(
-  "list-pipelines",
-  "Lista os pipelines do Piperun com suporte a paginação",
-  PaginationSchema,
-  list_pipelines
-);
-
-server.addTool(
-  "get-pipeline",
-  "Obtém os detalhes de um pipeline específico pelo ID",
-  PipelineIdSchema,
-  get_pipeline
-);
-
-server.addTool(
-  "list-stages",
-  "Lista os estágios do Piperun com suporte a paginação e filtro por pipeline",
-  StagesQuerySchema,
-  list_stages
-);
-
-server.addTool(
-  "list-products",
-  "Lista os produtos (items) do Piperun com suporte a paginação",
-  PaginationSchema,
-  list_products
-);
-
-// Usar o transporte WebSocket padrão do SDK
-const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-console.log(`Iniciando servidor na porta ${port}`);
-
-// Criar instância do servidor WebSocket
-const wss = new WS.Server({ port });
-console.log(`Servidor WebSocket iniciado na porta ${port}`);
-
-// Iniciar o servidor
-server.start();
-console.log("Servidor MCP iniciado com sucesso");
-
-// Gerenciar conexões WebSocket
-wss.on('connection', (ws: any) => {
-  console.log('Novo cliente conectado');
+// Ouvinte de dados da entrada padrão
+process.stdin.on('data', (chunk) => {
+  // Adicionar dados ao buffer
+  inputBuffer += chunk.toString();
   
-  // Enviar mensagem de confirmação
-  ws.send(JSON.stringify({ 
-    jsonrpc: "2.0",
-    result: { status: 'connected' },
-    id: "connection-" + Date.now()
-  }));
+  // Processar linhas completas
+  const lines = inputBuffer.split('\n');
   
-  ws.on('message', (message: any) => {
-    try {
-      console.log('Mensagem recebida:', message.toString().substring(0, 150));
-      const data = JSON.parse(message.toString());
-      
-      server.handleMessage(data, (response: any) => {
-        try {
-          console.log('Enviando resposta:', JSON.stringify(response).substring(0, 150));
-          ws.send(JSON.stringify(response));
-        } catch (error) {
-          console.error('Erro ao enviar resposta:', getErrorMessage(error));
-        }
-      });
-    } catch (error) {
-      console.error('Erro ao processar mensagem:', getErrorMessage(error));
-      
-      // Enviar resposta de erro formatada
-      const errorResponse = {
-        jsonrpc: "2.0",
-        error: {
-          code: -32700,
-          message: `Erro no processamento: ${getErrorMessage(error)}`
-        },
-        id: null
-      };
-      
-      try {
-        ws.send(JSON.stringify(errorResponse));
-      } catch (sendError) {
-        console.error('Erro ao enviar resposta de erro:', getErrorMessage(sendError));
-      }
-    }
-  });
+  // Processar todas as linhas completas exceto a última
+  for (let i = 0; i < lines.length - 1; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    
+    // Processar comando
+    processCommand(line).then(response => {
+      // Enviar resposta
+      process.stdout.write(response + '\n');
+    });
+  }
   
-  ws.on('close', (code: number, reason: string) => {
-    console.log(`Cliente desconectado. Código: ${code}, Motivo: ${reason || 'Não especificado'}`);
-  });
-  
-  ws.on('error', (error: any) => {
-    console.error('Erro na conexão WebSocket:', getErrorMessage(error));
-  });
+  // Guardar a última linha (possivelmente incompleta)
+  inputBuffer = lines[lines.length - 1];
 });
+
+console.error('Servidor Piperun MCP iniciado e aguardando comandos...');
