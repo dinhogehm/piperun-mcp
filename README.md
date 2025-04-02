@@ -1,4 +1,5 @@
 # Piperun MCP Server
+[![smithery badge](https://smithery.ai/badge/@dinhogehm/piperun-mcp)](https://smithery.ai/server/@dinhogehm/piperun-mcp)
 
 Servidor MCP (Model Context Protocol) para integração com o CRM Piperun.
 
@@ -26,6 +27,16 @@ O servidor foi implementado seguindo os conceitos de:
 - NPM ou Yarn
 
 ### Instalação
+
+#### Instalação via Smithery
+
+Para instalar Piperun MCP for Claude Desktop automaticamente via [Smithery](https://smithery.ai/server/@dinhogehm/piperun-mcp):
+
+```bash
+npx -y @smithery/cli install @dinhogehm/piperun-mcp --client claude
+```
+
+#### Instalação Manual
 
 1. Clone o repositório:
 ```bash
