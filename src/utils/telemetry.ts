@@ -25,6 +25,7 @@ export class Telemetry {
   private logger: Logger;
   private metrics: PerformanceMetric[] = [];
   private readonly maxMetrics: number;
+  private activeOperations: Map<string, PerformanceMetric> = new Map();
   
   /**
    * Cria uma instância da classe de telemetria
@@ -52,142 +53,172 @@ export class Telemetry {
       metadata
     };
     
-    this.metrics.push(metric);
+    this.activeOperations.set(id, metric);
     
-    // Limitar o número de métricas armazenadas
-    if (this.metrics.length > this.maxMetrics) {
-      this.metrics.shift();
-    }
+    this.logger.debug(`Operação iniciada: ${operation}`, { id, metadata });
     
     return id;
   }
   
   /**
-   * Finaliza o monitoramento de uma operação com sucesso
-   * @param id ID da operação
-   * @param additionalMetadata Metadados adicionais para registrar
+   * Finaliza o monitoramento de uma operação
+   * @param id ID da operação retornado por startOperation
+   * @param metadata Metadados adicionais sobre o resultado da operação
    */
-  endOperation(id: string, additionalMetadata?: Record<string, any>): void {
-    const operationIndex = this.getOperationIndex(id);
-    if (operationIndex === -1) {
-      this.logger.warn(`Operação com ID ${id} não encontrada`);
+  endOperation(id: string, metadata?: Record<string, any>): void {
+    const metric = this.activeOperations.get(id);
+    
+    if (!metric) {
+      this.logger.warn(`Tentativa de finalizar operação não encontrada: ${id}`);
       return;
     }
     
-    const metric = this.metrics[operationIndex];
     metric.endTime = Date.now();
     metric.duration = metric.endTime - metric.startTime;
-    metric.success = true;
+    metric.success = metadata?.success !== false; // Sucesso por padrão, a menos que explicitamente falhe
     
-    if (additionalMetadata) {
-      metric.metadata = {
-        ...metric.metadata,
-        ...additionalMetadata
-      };
+    if (metadata) {
+      metric.metadata = { ...metric.metadata, ...metadata };
     }
     
-    // Registrar métricas para operações lentas (> 1000ms)
-    if (metric.duration > 1000) {
-      this.logger.warn(`Operação lenta detectada: ${metric.operation}`, {
-        duration: metric.duration,
-        metadata: metric.metadata
-      });
-    }
+    this.activeOperations.delete(id);
+    
+    // Adicionar métrica ao histórico
+    this.addMetric(metric);
+    
+    const durationMs = metric.duration;
+    this.logger.debug(
+      `Operação finalizada: ${metric.operation}`, 
+      { id, duração: `${durationMs}ms`, success: metric.success, metadata }
+    );
   }
   
   /**
    * Registra uma falha em uma operação
-   * @param id ID da operação
+   * @param id ID da operação retornado por startOperation
    * @param error Erro ocorrido
-   * @param additionalMetadata Metadados adicionais para registrar
+   * @param metadata Metadados adicionais sobre o erro
    */
-  failOperation(id: string, error: Error, additionalMetadata?: Record<string, any>): void {
-    const operationIndex = this.getOperationIndex(id);
-    if (operationIndex === -1) {
-      this.logger.warn(`Operação com ID ${id} não encontrada`);
+  failOperation(id: string, error: Error, metadata?: Record<string, any>): void {
+    const metric = this.activeOperations.get(id);
+    
+    if (!metric) {
+      this.logger.warn(`Tentativa de registrar falha em operação não encontrada: ${id}`);
       return;
     }
     
-    const metric = this.metrics[operationIndex];
     metric.endTime = Date.now();
     metric.duration = metric.endTime - metric.startTime;
     metric.success = false;
     metric.error = error;
     
-    if (additionalMetadata) {
-      metric.metadata = {
-        ...metric.metadata,
-        ...additionalMetadata
-      };
+    if (metadata) {
+      metric.metadata = { ...metric.metadata, ...metadata };
     }
     
-    this.logger.error(`Falha na operação: ${metric.operation}`, {
-      duration: metric.duration,
-      error: error.message,
-      metadata: metric.metadata
-    });
+    this.activeOperations.delete(id);
+    
+    // Adicionar métrica ao histórico
+    this.addMetric(metric);
+    
+    const durationMs = metric.duration;
+    this.logger.error(
+      `Operação falhou: ${metric.operation}`,
+      { id, duração: `${durationMs}ms`, error: error.message, metadata }
+    );
+  }
+
+  /**
+   * Obtém a duração de uma operação (ativa ou finalizada)
+   * @param id ID da operação retornado por startOperation
+   * @returns Duração em milissegundos ou 0 se operação não encontrada
+   */
+  getOperationDuration(id: string): number {
+    // Tentar encontrar na lista de operações ativas
+    const activeMetric = this.activeOperations.get(id);
+    if (activeMetric) {
+      // Se ainda estiver ativa, calcular a duração até agora
+      return Date.now() - activeMetric.startTime;
+    }
+    
+    // Tentar encontrar nas métricas finalizadas
+    const finishedMetric = this.metrics.find(metric => 
+      metric.metadata && 'id' in metric.metadata && metric.metadata.id === id
+    );
+    
+    if (finishedMetric && finishedMetric.duration) {
+      return finishedMetric.duration;
+    }
+    
+    return 0; // Não encontrado
   }
   
   /**
-   * Obtém estatísticas de desempenho
-   * @returns Estatísticas de desempenho
+   * Adiciona uma métrica ao histórico
+   * @param metric Métrica a ser adicionada
+   */
+  private addMetric(metric: PerformanceMetric): void {
+    // Adicionar ao início do array para acesso mais rápido às métricas recentes
+    this.metrics.unshift({ ...metric });
+    
+    // Limitar o número de métricas armazenadas
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics.pop();
+    }
+  }
+  
+  /**
+   * Retorna estatísticas gerais do telemetria
    */
   getStats(): Record<string, any> {
-    // Contagem total de operações
-    const totalOperations = this.metrics.length;
+    // Contagens
+    const total = this.metrics.length;
+    const successful = this.metrics.filter(m => m.success).length;
+    const failed = total - successful;
+    const successRate = total > 0 ? (successful / total) : 0;
     
-    // Contagem de operações bem-sucedidas
-    const successfulOperations = this.metrics.filter(m => m.success).length;
+    // Operações
+    const operationCounts: Record<string, number> = {};
+    const operationDurations: Record<string, number[]> = {};
     
-    // Contagem de operações com falha
-    const failedOperations = totalOperations - successfulOperations;
-    
-    // Taxa de sucesso
-    const successRate = totalOperations > 0 
-      ? (successfulOperations / totalOperations) * 100
-      : 0;
-    
-    // Agrupar métricas por tipo de operação
-    const operationTypes = new Set(this.metrics.map(m => m.operation));
-    const operationStats: Record<string, { count: number, averageDuration: number }> = {};
-    
-    for (const operation of operationTypes) {
-      const operationMetrics = this.metrics.filter(m => m.operation === operation && m.duration !== undefined);
-      const count = operationMetrics.length;
+    // Agrupar métricas por operação
+    this.metrics.forEach(metric => {
+      const op = metric.operation;
       
-      const totalDuration = operationMetrics.reduce((sum, m) => sum + (m.duration || 0), 0);
-      const averageDuration = count > 0 ? totalDuration / count : 0;
+      if (!operationCounts[op]) {
+        operationCounts[op] = 0;
+        operationDurations[op] = [];
+      }
       
-      operationStats[operation] = {
-        count,
-        averageDuration
-      };
-    }
+      operationCounts[op]++;
+      
+      if (metric.duration) {
+        operationDurations[op].push(metric.duration);
+      }
+    });
+    
+    // Calcular duração média por operação
+    const operationAvgDurations: Record<string, number> = {};
+    Object.keys(operationDurations).forEach(op => {
+      const durations = operationDurations[op];
+      if (durations.length > 0) {
+        const total = durations.reduce((sum, duration) => sum + duration, 0);
+        operationAvgDurations[op] = Math.round(total / durations.length);
+      } else {
+        operationAvgDurations[op] = 0;
+      }
+    });
     
     return {
-      totalOperations,
-      successfulOperations,
-      failedOperations,
+      total,
+      successful,
+      failed,
       successRate,
-      operationStats
+      operations: Object.keys(operationCounts).map(op => ({
+        name: op,
+        count: operationCounts[op],
+        avgDuration: operationAvgDurations[op]
+      }))
     };
-  }
-  
-  /**
-   * Obtém o índice de uma operação pelo ID
-   * @param id ID da operação
-   * @returns Índice da operação ou -1 se não encontrada
-   */
-  private getOperationIndex(id: string): number {
-    const parts = id.split('-');
-    const operation = parts[0];
-    const timestamp = parseInt(parts[1], 10);
-    
-    // Encontrar a métrica correspondente
-    // Buscamos pela combinação de operação e timestamp
-    return this.metrics.findIndex(m => 
-      m.operation === operation && 
-      Math.abs(m.startTime - timestamp) < 100 // Tolerância de tempo
-    );
   }
 }

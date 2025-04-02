@@ -6,9 +6,24 @@ import { Telemetry } from '../utils/telemetry';
 // Cliente HTTP para a API do Piperun
 const api = axios.create({
   baseURL: env.PIPERUN_API_URL,
-  params: {
-    api_token: env.PIPERUN_API_KEY
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   }
+});
+
+// Adicionar token de API em cada requisição seguindo exatamente o formato esperado pelo Piperun
+api.interceptors.request.use(config => {
+  // Remover qualquer trailing slash da URL base para garantir consistência
+  if (config.url?.endsWith('/')) {
+    config.url = config.url.slice(0, -1);
+  }
+  
+  // Adicionar o token como parâmetro na URL usando o parâmetro correto "token"
+  const separator = config.url?.includes('?') ? '&' : '?';
+  config.url = `${config.url}${separator}token=${env.PIPERUN_API_KEY}`;
+  
+  return config;
 });
 
 // Interface genérica para respostas da API do Piperun
@@ -32,10 +47,31 @@ interface PiperunResponse<T> {
 export class PiperunApiService {
   private logger: Logger;
   private telemetry: Telemetry;
+  private apiStats: {
+    totalOperations: number;
+    successfulOperations: number;
+    failedOperations: number;
+    successRate: number;
+    operationStats: Record<string, { count: number; averageDuration: number }>;
+  };
   
   constructor() {
     this.logger = new Logger('PiperunApiService');
     this.telemetry = new Telemetry('PiperunAPI');
+    this.apiStats = {
+      totalOperations: 0,
+      successfulOperations: 0,
+      failedOperations: 0,
+      successRate: 0,
+      operationStats: {}
+    };
+  }
+
+  /**
+   * Retorna as estatísticas da API
+   */
+  getApiStats() {
+    return { ...this.apiStats };
   }
 
   /**
@@ -50,19 +86,64 @@ export class PiperunApiService {
     const opId = this.telemetry.startOperation('listDeals', { params });
     
     try {
-      this.logger.info('Buscando negócios', { params });
-      const response = await api.get<PiperunResponse<any[]>>('/deals', { params });
-      this.logger.info(`Encontrados ${response.data.data.length} negócios`);
+      this.logger.info('Listando negócios', { params });
       
-      this.telemetry.endOperation(opId, { 
-        count: response.data.data.length,
-        total: response.data.meta.pagination?.total || 0
-      });
+      const response = await api.get<PiperunResponse<any[]>>('/deals', { params });
+      
+      this.telemetry.endOperation(opId, { success: true, resultCount: response.data.data.length });
+      this.updateApiStats('listDeals', true, this.telemetry.getOperationDuration(opId));
       
       return response.data;
     } catch (error) {
       this.logger.error('Erro ao listar negócios', error);
-      this.telemetry.failOperation(opId, error instanceof Error ? error : new Error('Erro desconhecido'));
+      this.telemetry.endOperation(opId, { success: false, error });
+      this.updateApiStats('listDeals', false, this.telemetry.getOperationDuration(opId));
+      throw error;
+    }
+  }
+
+  /**
+   * Obtém detalhes de um negócio específico
+   */
+  async getDeal(dealId: number) {
+    const opId = this.telemetry.startOperation('getDeal', { dealId });
+    
+    try {
+      this.logger.info('Obtendo detalhes do negócio', { dealId });
+      
+      const response = await api.get(`/deals/${dealId}`);
+      
+      this.telemetry.endOperation(opId, { success: true });
+      this.updateApiStats('getDeal', true, this.telemetry.getOperationDuration(opId));
+      
+      return response.data.data;
+    } catch (error) {
+      this.logger.error('Erro ao obter detalhes do negócio', error);
+      this.telemetry.endOperation(opId, { success: false, error });
+      this.updateApiStats('getDeal', false, this.telemetry.getOperationDuration(opId));
+      throw error;
+    }
+  }
+
+  /**
+   * Atualiza um negócio existente
+   */
+  async updateDeal(dealId: number, data: any) {
+    const opId = this.telemetry.startOperation('updateDeal', { dealId });
+    
+    try {
+      this.logger.info('Atualizando negócio', { dealId, data });
+      
+      const response = await api.put(`/deals/${dealId}`, data);
+      
+      this.telemetry.endOperation(opId, { success: true });
+      this.updateApiStats('updateDeal', true, this.telemetry.getOperationDuration(opId));
+      
+      return response.data.data;
+    } catch (error) {
+      this.logger.error('Erro ao atualizar negócio', error);
+      this.telemetry.endOperation(opId, { success: false, error });
+      this.updateApiStats('updateDeal', false, this.telemetry.getOperationDuration(opId));
       throw error;
     }
   }
@@ -78,49 +159,46 @@ export class PiperunApiService {
     const opId = this.telemetry.startOperation('listPipelines', { params });
     
     try {
-      this.logger.info('Buscando funis', { params });
-      const response = await api.get<PiperunResponse<any[]>>('/pipelines', { params });
-      this.logger.info(`Encontrados ${response.data.data.length} funis`);
+      this.logger.info('Listando funis', { params });
       
-      this.telemetry.endOperation(opId, { 
-        count: response.data.data.length,
-        total: response.data.meta.pagination?.total || 0
-      });
+      const response = await api.get<PiperunResponse<any[]>>('/pipelines', { params });
+      
+      this.telemetry.endOperation(opId, { success: true, resultCount: response.data.data.length });
+      this.updateApiStats('listPipelines', true, this.telemetry.getOperationDuration(opId));
       
       return response.data;
     } catch (error) {
       this.logger.error('Erro ao listar funis', error);
-      this.telemetry.failOperation(opId, error instanceof Error ? error : new Error('Erro desconhecido'));
+      this.telemetry.endOperation(opId, { success: false, error });
+      this.updateApiStats('listPipelines', false, this.telemetry.getOperationDuration(opId));
       throw error;
     }
   }
 
   /**
-   * Lista etapas (stages) com suporte a paginação e filtros
+   * Lista etapas (stages) com suporte a paginação e filtro por funil
    */
   async listStages(params: {
+    pipeline_id?: number;
     page?: number;
     show?: number;
-    pipeline_id?: number;
     [key: string]: any;
   } = {}) {
     const opId = this.telemetry.startOperation('listStages', { params });
     
     try {
-      this.logger.info('Buscando etapas', { params });
-      const response = await api.get<PiperunResponse<any[]>>('/stages', { params });
-      this.logger.info(`Encontradas ${response.data.data.length} etapas`);
+      this.logger.info('Listando etapas', { params });
       
-      this.telemetry.endOperation(opId, { 
-        count: response.data.data.length,
-        total: response.data.meta.pagination?.total || 0,
-        pipeline_id: params.pipeline_id
-      });
+      const response = await api.get<PiperunResponse<any[]>>('/stages', { params });
+      
+      this.telemetry.endOperation(opId, { success: true, resultCount: response.data.data.length });
+      this.updateApiStats('listStages', true, this.telemetry.getOperationDuration(opId));
       
       return response.data;
     } catch (error) {
       this.logger.error('Erro ao listar etapas', error);
-      this.telemetry.failOperation(opId, error instanceof Error ? error : new Error('Erro desconhecido'));
+      this.telemetry.endOperation(opId, { success: false, error });
+      this.updateApiStats('listStages', false, this.telemetry.getOperationDuration(opId));
       throw error;
     }
   }
@@ -131,24 +209,24 @@ export class PiperunApiService {
   async listProducts(params: {
     page?: number;
     show?: number;
+    name?: string;
     [key: string]: any;
   } = {}) {
     const opId = this.telemetry.startOperation('listProducts', { params });
     
     try {
-      this.logger.info('Buscando produtos', { params });
-      const response = await api.get<PiperunResponse<any[]>>('/items', { params });
-      this.logger.info(`Encontrados ${response.data.data.length} produtos`);
+      this.logger.info('Listando produtos', { params });
       
-      this.telemetry.endOperation(opId, { 
-        count: response.data.data.length,
-        total: response.data.meta.pagination?.total || 0
-      });
+      const response = await api.get<PiperunResponse<any[]>>('/items', { params });
+      
+      this.telemetry.endOperation(opId, { success: true, resultCount: response.data.data.length });
+      this.updateApiStats('listProducts', true, this.telemetry.getOperationDuration(opId));
       
       return response.data;
     } catch (error) {
       this.logger.error('Erro ao listar produtos', error);
-      this.telemetry.failOperation(opId, error instanceof Error ? error : new Error('Erro desconhecido'));
+      this.telemetry.endOperation(opId, { success: false, error });
+      this.updateApiStats('listProducts', false, this.telemetry.getOperationDuration(opId));
       throw error;
     }
   }
@@ -159,74 +237,55 @@ export class PiperunApiService {
   async listContacts(params: {
     page?: number;
     show?: number;
+    name?: string;
+    email?: string;
     [key: string]: any;
   } = {}) {
     const opId = this.telemetry.startOperation('listContacts', { params });
     
     try {
-      this.logger.info('Buscando contatos', { params });
-      const response = await api.get<PiperunResponse<any[]>>('/people', { params });
-      this.logger.info(`Encontrados ${response.data.data.length} contatos`);
+      this.logger.info('Listando contatos', { params });
       
-      this.telemetry.endOperation(opId, { 
-        count: response.data.data.length,
-        total: response.data.meta.pagination?.total || 0
-      });
+      const response = await api.get<PiperunResponse<any[]>>('/people', { params });
+      
+      this.telemetry.endOperation(opId, { success: true, resultCount: response.data.data.length });
+      this.updateApiStats('listContacts', true, this.telemetry.getOperationDuration(opId));
       
       return response.data;
     } catch (error) {
       this.logger.error('Erro ao listar contatos', error);
-      this.telemetry.failOperation(opId, error instanceof Error ? error : new Error('Erro desconhecido'));
+      this.telemetry.endOperation(opId, { success: false, error });
+      this.updateApiStats('listContacts', false, this.telemetry.getOperationDuration(opId));
       throw error;
     }
   }
 
   /**
-   * Obtém detalhes de um negócio específico
+   * Atualiza as estatísticas de operações da API
    */
-  async getDeal(dealId: number) {
-    const opId = this.telemetry.startOperation('getDeal', { dealId });
+  private updateApiStats(operation: string, success: boolean, duration: number) {
+    this.apiStats.totalOperations++;
     
-    try {
-      this.logger.info(`Buscando detalhes do negócio ${dealId}`);
-      const response = await api.get<{ data: any }>(`/deals/${dealId}`);
-      this.logger.info(`Detalhes do negócio ${dealId} obtidos com sucesso`);
-      
-      this.telemetry.endOperation(opId);
-      
-      return response.data.data;
-    } catch (error) {
-      this.logger.error(`Erro ao obter negócio ${dealId}`, error);
-      this.telemetry.failOperation(opId, error instanceof Error ? error : new Error('Erro desconhecido'));
-      throw error;
+    if (success) {
+      this.apiStats.successfulOperations++;
+    } else {
+      this.apiStats.failedOperations++;
     }
-  }
-
-  /**
-   * Atualiza um negócio específico
-   */
-  async updateDeal(dealId: number, data: any) {
-    const opId = this.telemetry.startOperation('updateDeal', { dealId, data });
     
-    try {
-      this.logger.info(`Atualizando negócio ${dealId}`, { dados: data });
-      const response = await api.put<{ data: any }>(`/deals/${dealId}`, data);
-      this.logger.info(`Negócio ${dealId} atualizado com sucesso`);
-      
-      this.telemetry.endOperation(opId);
-      
-      return response.data.data;
-    } catch (error) {
-      this.logger.error(`Erro ao atualizar negócio ${dealId}`, error);
-      this.telemetry.failOperation(opId, error instanceof Error ? error : new Error('Erro desconhecido'));
-      throw error;
+    this.apiStats.successRate = this.apiStats.successfulOperations / this.apiStats.totalOperations;
+    
+    if (!this.apiStats.operationStats[operation]) {
+      this.apiStats.operationStats[operation] = {
+        count: 0,
+        averageDuration: 0
+      };
     }
-  }
-  
-  /**
-   * Obtém estatísticas de desempenho da API
-   */
-  getApiStats() {
-    return this.telemetry.getStats();
+    
+    const stats = this.apiStats.operationStats[operation];
+    stats.count++;
+    
+    // Recalcular a duração média
+    stats.averageDuration = 
+      ((stats.averageDuration * (stats.count - 1)) + duration) / stats.count;
   }
 }

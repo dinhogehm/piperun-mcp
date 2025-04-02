@@ -26,6 +26,20 @@ export class Logger {
   }
   
   /**
+   * Registra uma mensagem de log de depuração
+   * @param message Mensagem a ser registrada
+   * @param data Dados adicionais (opcional)
+   */
+  debug(message: string, data?: any): void {
+    const formattedMessage = this.format('debug', message);
+    if (data) {
+      console.debug(formattedMessage, data);
+    } else {
+      console.debug(formattedMessage);
+    }
+  }
+  
+  /**
    * Registra uma mensagem de log informativa
    * @param message Mensagem a ser registrada
    * @param data Dados adicionais (opcional)

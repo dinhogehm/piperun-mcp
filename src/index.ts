@@ -1,3 +1,4 @@
+// Importações do MCP SDK adaptadas para a estrutura ESM
 import { McpServer } from '@modelcontextprotocol/sdk';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk';
 import { HttpServerTransport } from '@modelcontextprotocol/sdk';
