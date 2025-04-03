@@ -1,6 +1,12 @@
 // Este é o arquivo de entrada principal para o Smithery
-// Ele simplesmente importa e executa o servidor Express
+// Ele importa e executa o servidor Model Context Protocol (MCP)
 
-import './src/server.js';
+import server from './src/mcp-server.js';
 
-console.log('PipeRun MCP API iniciada com sucesso');
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log(`Servidor PipeRun MCP rodando na porta ${PORT}`);
+  console.log('Endpoints MCP disponíveis: /tools/list e /tools/execute');
+});
+

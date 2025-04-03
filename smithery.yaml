@@ -1,0 +1,13 @@
+version: '1'
+name: piperun-mcp
+description: "Integração do PipeRun com Model Context Protocol"
+type: server
+entrypoint: index.js
+port: 3000
+routes:
+  - path: /
+    methods: [GET]
+  - path: /tools/list
+    methods: [POST]
+  - path: /tools/execute
+    methods: [POST]
