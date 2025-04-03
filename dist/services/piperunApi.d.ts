@@ -86,6 +86,14 @@ export declare class PiperunApiService {
         [key: string]: any;
     }): Promise<PiperunResponse<any[]>>;
     /**
+     * Lista usuários da conta Piperun com suporte a paginação e filtros
+     */
+    listUsers(params?: {
+        page?: number;
+        show?: number;
+        [key: string]: any;
+    }): Promise<PiperunResponse<any[]>>;
+    /**
      * Atualiza as estatísticas de operações da API
      */
     private updateApiStats;

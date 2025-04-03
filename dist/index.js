@@ -15,6 +15,7 @@ import { pipelineTools } from './tools/pipelineTools.js';
 import { productTools } from './tools/productTools.js';
 import { contactTools } from './tools/contactTools.js';
 import { statsTools } from './tools/statsTools.js';
+import { userTools } from './tools/userTools.js';
 // Importação dos recursos
 import { dealResources } from './resources/dealResources.js';
 import { pipelineResources } from './resources/pipelineResources.js';
@@ -92,6 +93,11 @@ async function startPiperunMcpServer() {
                         name: contactTools.listContacts.name,
                         description: 'Lista os contatos cadastrados',
                         inputSchema: contactTools.listContacts.schema
+                    },
+                    {
+                        name: userTools.listUsers.name,
+                        description: 'Lista os usuários da conta',
+                        inputSchema: userTools.listUsers.schema
                     },
                     {
                         name: statsTools.getServerStats.name,
@@ -195,6 +201,8 @@ async function startPiperunMcpServer() {
         server.setRequestHandler(createMethodWithParamsSchema(productTools.listProducts.name, productTools.listProducts.schema), adaptObjectParamsHandler(productTools.listProducts.handler));
         // Contact tools
         server.setRequestHandler(createMethodWithParamsSchema(contactTools.listContacts.name, contactTools.listContacts.schema), adaptObjectParamsHandler(contactTools.listContacts.handler));
+        // User tools
+        server.setRequestHandler(createMethodWithParamsSchema(userTools.listUsers.name, userTools.listUsers.schema), adaptObjectParamsHandler(userTools.listUsers.handler));
         // Stats tools
         server.setRequestHandler(createMethodWithParamsSchema(statsTools.getServerStats.name, statsTools.getServerStats.schema), adaptHandler(statsTools.getServerStats.handler));
         server.setRequestHandler(createMethodWithParamsSchema(statsTools.checkHealth.name, statsTools.checkHealth.schema), adaptHandler(statsTools.checkHealth.handler));

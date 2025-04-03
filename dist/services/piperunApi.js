@@ -177,6 +177,25 @@ export class PiperunApiService {
         }
     }
     /**
+     * Lista usuários da conta Piperun com suporte a paginação e filtros
+     */
+    async listUsers(params = {}) {
+        const opId = this.telemetry.startOperation('listUsers', { params });
+        try {
+            this.logger.info('Listando usuários', { params });
+            const response = await api.get('/users', { params });
+            this.telemetry.endOperation(opId, { success: true, resultCount: response.data.data.length });
+            this.updateApiStats('listUsers', true, this.telemetry.getOperationDuration(opId));
+            return response.data;
+        }
+        catch (error) {
+            this.logger.error('Erro ao listar usuários', error);
+            this.telemetry.endOperation(opId, { success: false, error });
+            this.updateApiStats('listUsers', false, this.telemetry.getOperationDuration(opId));
+            throw error;
+        }
+    }
+    /**
      * Atualiza as estatísticas de operações da API
      */
     updateApiStats(operation, success, duration) {
