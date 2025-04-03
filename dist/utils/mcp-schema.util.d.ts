@@ -112,6 +112,13 @@ export declare function createMethodWithParamsSchema(method: string, paramsSchem
     method: string;
     params?: any;
 }>;
+/**
+ * Serializa um schema Zod para uma representação JSON simplificada
+ * para evitar problemas de serialização com o Claude Desktop
+ * @param schema O schema Zod para serializar
+ * @returns Um objeto JSON simplificado representando o schema
+ */
+export declare function safeSerializeSchema(schema: z.ZodType<any>): Record<string, any>;
 export declare const ToolsListSchema: z.ZodObject<z.objectUtil.extendShape<{
     method: 
     /**

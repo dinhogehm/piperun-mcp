@@ -24,7 +24,7 @@ const searchDealsSchema = z.object({
 export const dealTools = {
     // Ferramenta para listar negócios
     listDeals: {
-        name: 'listar-negocios',
+        name: 'mcp0_listar-negocios',
         schema: searchDealsSchema,
         handler: async (params) => {
             try {
@@ -55,7 +55,7 @@ export const dealTools = {
     },
     // Ferramenta para obter detalhes de um negócio
     getDealDetails: {
-        name: 'detalhes-negocio',
+        name: 'mcp0_detalhes-negocio',
         schema: z.object({
             deal_id: z.number()
         }),
@@ -88,7 +88,7 @@ export const dealTools = {
     },
     // Ferramenta para atualizar um negócio
     updateDeal: {
-        name: 'atualizar-negocio',
+        name: 'mcp0_atualizar-negocio',
         schema: z.object({
             deal_id: z.number(),
             data: updateDealSchema

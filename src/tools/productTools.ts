@@ -16,7 +16,7 @@ const searchProductsSchema = z.object({
 export const productTools = {
   // Ferramenta para listar produtos
   listProducts: {
-    name: 'listar-produtos',
+    name: 'mcp0_listar-produtos',
     schema: searchProductsSchema,
     handler: async (params: z.infer<typeof searchProductsSchema>) => {
       try {

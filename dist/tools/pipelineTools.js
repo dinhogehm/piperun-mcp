@@ -12,7 +12,7 @@ const searchPipelinesSchema = z.object({
 export const pipelineTools = {
     // Ferramenta para listar funis
     listPipelines: {
-        name: 'listar-funis',
+        name: 'mcp0_listar-funis',
         schema: searchPipelinesSchema,
         handler: async (params) => {
             try {
@@ -43,7 +43,7 @@ export const pipelineTools = {
     },
     // Ferramenta para listar estágios de um funil específico
     listStages: {
-        name: 'listar-estagios',
+        name: 'mcp0_listar-estagios',
         schema: z.object({
             pipeline_id: z.number().optional(),
             page: z.number().default(1),

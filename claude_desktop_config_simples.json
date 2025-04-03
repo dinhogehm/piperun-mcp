@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "piperun-local": {
+      "command": "node",
+      "args": [
+        "/Users/osvaldogehm/Desktop/piperun-mcp/dist/index.js"
+      ],
+      "env": {
+        "PIPERUN_API_KEY": "e9c00ac9c6120c6afdbcba7d0db61fa9",
+        "PIPERUN_API_URL": "https://api.pipe.run/v1/",
+        "MCP_SERVER_NAME": "PiperunMCP",
+        "MCP_SERVER_VERSION": "1.0.0",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}

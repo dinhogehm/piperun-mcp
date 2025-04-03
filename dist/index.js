@@ -26,7 +26,7 @@ import { dealPrompts } from './prompts/dealPrompts.js';
 import { pipelinePrompts } from './prompts/pipelinePrompts.js';
 import { contactPrompts } from './prompts/contactPrompts.js';
 // Importação de utilitários
-import { PromptsListSchema, ResourcesListSchema, ToolsListSchema, createMethodWithParamsSchema } from './utils/mcp-schema.util.js';
+import { PromptsListSchema, ResourcesListSchema, ToolsListSchema, createMethodWithParamsSchema, safeSerializeSchema } from './utils/mcp-schema.util.js';
 import { adaptHandler, adaptNamedParamsHandler, adaptObjectParamsHandler } from './utils/mcp-handler.util.js';
 // Logger central do servidor
 const logger = new Logger('PiperunMCP');
@@ -62,52 +62,52 @@ async function startPiperunMcpServer() {
                     {
                         name: dealTools.listDeals.name,
                         description: 'Lista os negócios do CRM Piperun',
-                        inputSchema: dealTools.listDeals.schema
+                        inputSchema: safeSerializeSchema(dealTools.listDeals.schema)
                     },
                     {
                         name: dealTools.getDealDetails.name,
                         description: 'Obtém detalhes de um negócio específico',
-                        inputSchema: dealTools.getDealDetails.schema
+                        inputSchema: safeSerializeSchema(dealTools.getDealDetails.schema)
                     },
                     {
                         name: dealTools.updateDeal.name,
                         description: 'Atualiza um negócio existente',
-                        inputSchema: dealTools.updateDeal.schema
+                        inputSchema: safeSerializeSchema(dealTools.updateDeal.schema)
                     },
                     {
                         name: pipelineTools.listPipelines.name,
                         description: 'Lista os funis de vendas',
-                        inputSchema: pipelineTools.listPipelines.schema
+                        inputSchema: safeSerializeSchema(pipelineTools.listPipelines.schema)
                     },
                     {
                         name: pipelineTools.listStages.name,
                         description: 'Lista os estágios de um funil',
-                        inputSchema: pipelineTools.listStages.schema
+                        inputSchema: safeSerializeSchema(pipelineTools.listStages.schema)
                     },
                     {
                         name: productTools.listProducts.name,
                         description: 'Lista os produtos disponíveis',
-                        inputSchema: productTools.listProducts.schema
+                        inputSchema: safeSerializeSchema(productTools.listProducts.schema)
                     },
                     {
                         name: contactTools.listContacts.name,
                         description: 'Lista os contatos cadastrados',
-                        inputSchema: contactTools.listContacts.schema
+                        inputSchema: safeSerializeSchema(contactTools.listContacts.schema)
                     },
                     {
                         name: userTools.listUsers.name,
                         description: 'Lista os usuários da conta',
-                        inputSchema: userTools.listUsers.schema
+                        inputSchema: safeSerializeSchema(userTools.listUsers.schema)
                     },
                     {
                         name: statsTools.getServerStats.name,
                         description: 'Obtém estatísticas do servidor',
-                        inputSchema: statsTools.getServerStats.schema
+                        inputSchema: safeSerializeSchema(statsTools.getServerStats.schema)
                     },
                     {
                         name: statsTools.checkHealth.name,
                         description: 'Verifica a saúde do servidor',
-                        inputSchema: statsTools.checkHealth.schema
+                        inputSchema: safeSerializeSchema(statsTools.checkHealth.schema)
                     }
                 ]
             };
@@ -158,32 +158,32 @@ async function startPiperunMcpServer() {
                     {
                         name: dealPrompts.analyzeDeal.name,
                         description: 'Analisa um negócio',
-                        inputSchema: dealPrompts.analyzeDeal.schema
+                        inputSchema: safeSerializeSchema(dealPrompts.analyzeDeal.schema)
                     },
                     {
                         name: dealPrompts.summarizeDeals.name,
                         description: 'Resume uma lista de negócios',
-                        inputSchema: dealPrompts.summarizeDeals.schema
+                        inputSchema: safeSerializeSchema(dealPrompts.summarizeDeals.schema)
                     },
                     {
                         name: pipelinePrompts.analyzePipeline.name,
                         description: 'Analisa um funil de vendas',
-                        inputSchema: pipelinePrompts.analyzePipeline.schema
+                        inputSchema: safeSerializeSchema(pipelinePrompts.analyzePipeline.schema)
                     },
                     {
                         name: pipelinePrompts.compareStages.name,
                         description: 'Compara estágios de um funil',
-                        inputSchema: pipelinePrompts.compareStages.schema
+                        inputSchema: safeSerializeSchema(pipelinePrompts.compareStages.schema)
                     },
                     {
                         name: contactPrompts.analyzeContact.name,
                         description: 'Analisa um contato',
-                        inputSchema: contactPrompts.analyzeContact.schema
+                        inputSchema: safeSerializeSchema(contactPrompts.analyzeContact.schema)
                     },
                     {
                         name: contactPrompts.identifyHighValueContacts.name,
                         description: 'Identifica contatos de alto valor',
-                        inputSchema: contactPrompts.identifyHighValueContacts.schema
+                        inputSchema: safeSerializeSchema(contactPrompts.identifyHighValueContacts.schema)
                     }
                 ]
             };

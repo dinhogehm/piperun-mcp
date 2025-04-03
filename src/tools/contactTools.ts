@@ -17,7 +17,7 @@ const searchContactsSchema = z.object({
 export const contactTools = {
   // Ferramenta para listar contatos
   listContacts: {
-    name: 'listar-contatos',
+    name: 'mcp0_listar-contatos',
     schema: searchContactsSchema,
     handler: async (params: z.infer<typeof searchContactsSchema>) => {
       try {

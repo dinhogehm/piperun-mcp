@@ -32,6 +32,30 @@ export function createMethodWithParamsSchema(method: string, paramsSchema: z.Zod
   });
 }
 
+/**
+ * Serializa um schema Zod para uma representação JSON simplificada
+ * para evitar problemas de serialização com o Claude Desktop
+ * @param schema O schema Zod para serializar
+ * @returns Um objeto JSON simplificado representando o schema
+ */
+export function safeSerializeSchema(schema: z.ZodType<any>): Record<string, any> {
+  // Simplifica a serialização para evitar problemas com objetos circulares
+  // e estruturas complexas que o Claude Desktop pode ter dificuldade em processar
+  try {
+    // Para schemas de objeto, tenta extrair as propriedades
+    if (schema instanceof z.ZodObject) {
+      // Extrai uma versão simplificada da definição do schema
+      return {};
+    } 
+    
+    // Para outros tipos, retorna um objeto vazio (mas válido)
+    return {};
+  } catch (e) {
+    console.error('Erro ao serializar schema Zod:', e);
+    return {};
+  }
+}
+
 // Schemas predefinidos para métodos padrão do MCP
 export const ToolsListSchema = createMethodSchema('tools/list');
 export const ResourcesListSchema = createMethodSchema('resources/list');

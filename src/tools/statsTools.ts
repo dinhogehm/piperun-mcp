@@ -11,7 +11,7 @@ const logger = new Logger('StatsTools');
 export const statsTools = {
   // Ferramenta para obter estatísticas do servidor MCP
   getServerStats: {
-    name: 'estatisticas-servidor',
+    name: 'mcp0_estatisticas-servidor',
     schema: z.object({}),
     handler: async () => {
       try {
@@ -73,7 +73,7 @@ export const statsTools = {
   
   // Ferramenta para verificar a saúde e conectividade do servidor
   checkHealth: {
-    name: 'verificar-saude',
+    name: 'mcp0_verificar-saude',
     schema: z.object({}),
     handler: async () => {
       try {

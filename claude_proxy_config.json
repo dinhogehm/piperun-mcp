@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "piperun-proxy": {
+      "command": "node",
+      "args": [
+        "/Users/osvaldogehm/Desktop/piperun-mcp/claude-mcp-proxy.js"
+      ],
+      "env": {
+        "DEBUG": "true"
+      }
+    }
+  }
+}
