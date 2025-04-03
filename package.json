@@ -1,0 +1,31 @@
+{
+  "name": "piperun-mcp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dinhogehm/piperun-mcp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dinhogehm/piperun-mcp/issues"
+  },
+  "homepage": "https://github.com/dinhogehm/piperun-mcp#readme",
+  "description": "",
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "@smithery/sdk": "^1.0.4",
+    "@types/node": "^22.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "openai": "^4.91.1"
+  }
+}
