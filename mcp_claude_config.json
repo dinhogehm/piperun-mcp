@@ -1,0 +1,191 @@
+{
+  "mcpServers": {
+    "piperun-smithery": {
+      "command": "curl",
+      "args": ["-s", "https://smithery.ai/server/@dinhogehm/piperun-mcp/api"],
+      "url": "https://smithery.ai/server/@dinhogehm/piperun-mcp/api",
+      "tools": [
+        {
+          "id": "mcp0_listar-negocios",
+          "name": "Lista os negócios do CRM Piperun",
+          "description": "Lista os negócios (deals) do Piperun com suporte a paginação e filtros",
+          "parameters": {
+            "page": {
+              "type": "number",
+              "description": "Número da página",
+              "required": false,
+              "default": 1
+            },
+            "show": {
+              "type": "number",
+              "description": "Quantidade de itens por página",
+              "required": false,
+              "default": 20
+            },
+            "person_id": {
+              "type": "number",
+              "description": "ID da pessoa (contato) para filtrar",
+              "required": false
+            }
+          }
+        },
+        {
+          "id": "mcp0_detalhes-negocio",
+          "name": "Obtém detalhes de um negócio específico",
+          "description": "Obtém os detalhes completos de um negócio pelo seu ID",
+          "parameters": {
+            "deal_id": {
+              "type": "number",
+              "description": "ID do negócio a ser consultado",
+              "required": true
+            }
+          }
+        },
+        {
+          "id": "mcp0_atualizar-negocio",
+          "name": "Atualiza um negócio existente",
+          "description": "Atualiza os dados de um negócio existente pelo seu ID",
+          "parameters": {
+            "deal_id": {
+              "type": "number",
+              "description": "ID do negócio a ser atualizado",
+              "required": true
+            },
+            "data": {
+              "type": "object",
+              "description": "Dados a serem atualizados no negócio",
+              "required": true
+            }
+          }
+        },
+        {
+          "id": "mcp0_listar-funis",
+          "name": "Lista os funis de vendas",
+          "description": "Lista os funis (pipelines) do Piperun com suporte a paginação",
+          "parameters": {
+            "page": {
+              "type": "number",
+              "description": "Número da página",
+              "required": false,
+              "default": 1
+            },
+            "show": {
+              "type": "number",
+              "description": "Quantidade de itens por página",
+              "required": false,
+              "default": 20
+            }
+          }
+        },
+        {
+          "id": "mcp0_listar-estagios",
+          "name": "Lista os estágios de um funil",
+          "description": "Lista os estágios (stages) do Piperun com suporte a paginação e filtro por funil",
+          "parameters": {
+            "pipeline_id": {
+              "type": "number",
+              "description": "ID do funil para filtrar os estágios",
+              "required": false
+            },
+            "page": {
+              "type": "number",
+              "description": "Número da página",
+              "required": false,
+              "default": 1
+            },
+            "show": {
+              "type": "number",
+              "description": "Quantidade de itens por página",
+              "required": false,
+              "default": 20
+            }
+          }
+        },
+        {
+          "id": "mcp0_listar-produtos",
+          "name": "Lista os produtos disponíveis",
+          "description": "Lista os produtos (items) do Piperun com suporte a paginação",
+          "parameters": {
+            "page": {
+              "type": "number",
+              "description": "Número da página",
+              "required": false,
+              "default": 1
+            },
+            "show": {
+              "type": "number",
+              "description": "Quantidade de itens por página",
+              "required": false,
+              "default": 20
+            },
+            "name": {
+              "type": "string",
+              "description": "Nome do produto para filtrar",
+              "required": false
+            }
+          }
+        },
+        {
+          "id": "mcp0_listar-contatos",
+          "name": "Lista os contatos cadastrados",
+          "description": "Lista os contatos (people) do Piperun com suporte a paginação e filtros",
+          "parameters": {
+            "page": {
+              "type": "number",
+              "description": "Número da página",
+              "required": false,
+              "default": 1
+            },
+            "show": {
+              "type": "number",
+              "description": "Quantidade de itens por página",
+              "required": false,
+              "default": 20
+            },
+            "name": {
+              "type": "string",
+              "description": "Nome do contato para filtrar",
+              "required": false
+            },
+            "email": {
+              "type": "string",
+              "description": "Email do contato para filtrar",
+              "required": false
+            }
+          }
+        },
+        {
+          "id": "mcp0_listar-usuarios",
+          "name": "Lista os usuários da conta",
+          "description": "Lista os usuários da conta Piperun com suporte a paginação",
+          "parameters": {
+            "page": {
+              "type": "number",
+              "description": "Número da página",
+              "required": false,
+              "default": 1
+            },
+            "show": {
+              "type": "number",
+              "description": "Quantidade de itens por página",
+              "required": false,
+              "default": 20
+            }
+          }
+        },
+        {
+          "id": "mcp0_estatisticas-servidor",
+          "name": "Obtém estatísticas do servidor",
+          "description": "Retorna estatísticas de uso da API e operações do servidor",
+          "parameters": {}
+        },
+        {
+          "id": "mcp0_verificar-saude",
+          "name": "Verifica a saúde do servidor",
+          "description": "Verifica se o servidor MCP e a conexão com a API do Piperun estão funcionando corretamente",
+          "parameters": {}
+        }
+      ]
+    }
+  }
+}
