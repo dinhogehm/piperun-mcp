@@ -1,19 +1,16 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.contactResources = void 0;
-const sdk_1 = require("@modelcontextprotocol/sdk");
-const piperunApi_1 = require("../services/piperunApi");
-const logger_1 = require("../utils/logger");
-const piperunApi = new piperunApi_1.PiperunApiService();
-const logger = new logger_1.Logger('ContactResources');
+import { ResourceTemplate } from '../adapters/mcp-sdk.adapter.js';
+import { PiperunApiService } from '../services/piperunApi.js';
+import { Logger } from '../utils/logger.js';
+const piperunApi = new PiperunApiService();
+const logger = new Logger('ContactResources');
 /**
  * Recursos relacionados a contatos (people) no Piperun
  */
-exports.contactResources = {
+export const contactResources = {
     // Recurso para listar contatos
     listContacts: {
         name: 'contatos',
-        template: new sdk_1.ResourceTemplate('piperun://contatos', {
+        template: new ResourceTemplate('piperun://contatos', {
             list: 'piperun://contatos/lista?page={page}&show={show}'
         }),
         handler: async (uri, params) => {

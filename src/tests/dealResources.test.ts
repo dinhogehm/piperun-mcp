@@ -1,5 +1,6 @@
-import { dealResources } from '../resources/dealResources';
-import { PiperunApiService } from '../services/piperunApi';
+import { test, expect, describe, jest } from '@jest/globals';
+import { dealResources } from '../resources/dealResources.js';
+import { PiperunApiService } from '../services/piperunApi.js';
 
 // Mock do serviço PiperunApiService
 jest.mock('../services/piperunApi');

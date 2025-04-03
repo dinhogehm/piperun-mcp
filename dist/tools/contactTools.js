@@ -1,20 +1,17 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.contactTools = void 0;
-const zod_1 = require("zod");
-const piperunApi_1 = require("../services/piperunApi");
-const piperunApi = new piperunApi_1.PiperunApiService();
+import { z } from 'zod';
+import { PiperunApiService } from '../services/piperunApi.js';
+const piperunApi = new PiperunApiService();
 // Esquema para pesquisa de contatos
-const searchContactsSchema = zod_1.z.object({
-    page: zod_1.z.number().default(1),
-    show: zod_1.z.number().default(10),
-    name: zod_1.z.string().optional(),
-    email: zod_1.z.string().optional(),
+const searchContactsSchema = z.object({
+    page: z.number().default(1),
+    show: z.number().default(10),
+    name: z.string().optional(),
+    email: z.string().optional(),
 });
 /**
  * Ferramentas relacionadas a contatos (people) no Piperun
  */
-exports.contactTools = {
+export const contactTools = {
     // Ferramenta para listar contatos
     listContacts: {
         name: 'listar-contatos',

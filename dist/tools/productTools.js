@@ -1,19 +1,16 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.productTools = void 0;
-const zod_1 = require("zod");
-const piperunApi_1 = require("../services/piperunApi");
-const piperunApi = new piperunApi_1.PiperunApiService();
+import { z } from 'zod';
+import { PiperunApiService } from '../services/piperunApi.js';
+const piperunApi = new PiperunApiService();
 // Esquema para pesquisa de produtos
-const searchProductsSchema = zod_1.z.object({
-    page: zod_1.z.number().default(1),
-    show: zod_1.z.number().default(10),
-    name: zod_1.z.string().optional(),
+const searchProductsSchema = z.object({
+    page: z.number().default(1),
+    show: z.number().default(10),
+    name: z.string().optional(),
 });
 /**
  * Ferramentas relacionadas a produtos (items) no Piperun
  */
-exports.productTools = {
+export const productTools = {
     // Ferramenta para listar produtos
     listProducts: {
         name: 'listar-produtos',

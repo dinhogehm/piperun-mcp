@@ -1,16 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.pipelinePrompts = void 0;
-const zod_1 = require("zod");
+import { z } from 'zod';
 /**
  * Prompts relacionados a funis (pipelines) e estágios (stages) no Piperun
  */
-exports.pipelinePrompts = {
+export const pipelinePrompts = {
     // Prompt para analisar desempenho de funil
     analyzePipeline: {
         name: 'analisar-funil',
-        schema: zod_1.z.object({
-            pipelineId: zod_1.z.number()
+        schema: z.object({
+            pipelineId: z.number()
         }),
         handler: ({ pipelineId }) => ({
             messages: [
@@ -37,8 +34,8 @@ Use os recursos e ferramentas do Piperun para buscar todas as informações rele
     // Prompt para comparar estágios de um funil
     compareStages: {
         name: 'comparar-etapas',
-        schema: zod_1.z.object({
-            pipelineId: zod_1.z.number(),
+        schema: z.object({
+            pipelineId: z.number(),
         }),
         handler: ({ pipelineId }) => ({
             messages: [

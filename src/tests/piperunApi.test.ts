@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PiperunApiService } from '../services/piperunApi';
+import { PiperunApiService } from '../services/piperunApi.js';
 
 // Mock do axios
 jest.mock('axios');

@@ -1,18 +1,15 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.pipelineTools = void 0;
-const zod_1 = require("zod");
-const piperunApi_1 = require("../services/piperunApi");
-const piperunApi = new piperunApi_1.PiperunApiService();
+import { z } from 'zod';
+import { PiperunApiService } from '../services/piperunApi.js';
+const piperunApi = new PiperunApiService();
 // Esquema para pesquisa de funis
-const searchPipelinesSchema = zod_1.z.object({
-    page: zod_1.z.number().default(1),
-    show: zod_1.z.number().default(10),
+const searchPipelinesSchema = z.object({
+    page: z.number().default(1),
+    show: z.number().default(10),
 });
 /**
  * Ferramentas relacionadas a funis (pipelines) no Piperun
  */
-exports.pipelineTools = {
+export const pipelineTools = {
     // Ferramenta para listar funis
     listPipelines: {
         name: 'listar-funis',
@@ -47,10 +44,10 @@ exports.pipelineTools = {
     // Ferramenta para listar estágios de um funil específico
     listStages: {
         name: 'listar-estagios',
-        schema: zod_1.z.object({
-            pipeline_id: zod_1.z.number().optional(),
-            page: zod_1.z.number().default(1),
-            show: zod_1.z.number().default(10),
+        schema: z.object({
+            pipeline_id: z.number().optional(),
+            page: z.number().default(1),
+            show: z.number().default(10),
         }),
         handler: async (params) => {
             try {

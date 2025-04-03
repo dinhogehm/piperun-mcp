@@ -1,4 +1,4 @@
-import { ResourceTemplate } from '@modelcontextprotocol/sdk';
+import { ResourceTemplate } from '../adapters/mcp-sdk.adapter.js';
 /**
  * Recursos relacionados a produtos (items) no Piperun
  */

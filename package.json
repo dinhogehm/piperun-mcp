@@ -2,6 +2,7 @@
   "name": "piperun-mcp",
   "version": "1.0.0",
   "description": "Servidor MCP para o CRM Piperun",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

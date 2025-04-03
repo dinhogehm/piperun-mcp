@@ -1,19 +1,16 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.pipelineResources = void 0;
-const sdk_1 = require("@modelcontextprotocol/sdk");
-const piperunApi_1 = require("../services/piperunApi");
-const logger_1 = require("../utils/logger");
-const piperunApi = new piperunApi_1.PiperunApiService();
-const logger = new logger_1.Logger('PipelineResources');
+import { ResourceTemplate } from '../adapters/mcp-sdk.adapter.js';
+import { PiperunApiService } from '../services/piperunApi.js';
+import { Logger } from '../utils/logger.js';
+const piperunApi = new PiperunApiService();
+const logger = new Logger('PipelineResources');
 /**
  * Recursos relacionados a funis (pipelines) no Piperun
  */
-exports.pipelineResources = {
+export const pipelineResources = {
     // Recurso para listar funis
     listPipelines: {
         name: 'funis',
-        template: new sdk_1.ResourceTemplate('piperun://funis', {
+        template: new ResourceTemplate('piperun://funis', {
             list: 'piperun://funis/lista?page={page}&show={show}'
         }),
         handler: async (uri, params) => {
@@ -50,7 +47,7 @@ exports.pipelineResources = {
     // Recurso para listar estágios
     listStages: {
         name: 'estagios',
-        template: new sdk_1.ResourceTemplate('piperun://estagios', {
+        template: new ResourceTemplate('piperun://estagios', {
             list: 'piperun://estagios/lista?page={page}&show={show}&pipeline_id={pipelineId}'
         }),
         handler: async (uri, params) => {

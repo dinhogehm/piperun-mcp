@@ -1,17 +1,12 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const axios_1 = __importDefault(require("axios"));
-const piperunApi_1 = require("../services/piperunApi");
+import axios from 'axios';
+import { PiperunApiService } from '../services/piperunApi.js';
 // Mock do axios
 jest.mock('axios');
-const mockedAxios = axios_1.default;
+const mockedAxios = axios;
 describe('PiperunApiService', () => {
     let piperunApiService;
     beforeEach(() => {
-        piperunApiService = new piperunApi_1.PiperunApiService();
+        piperunApiService = new PiperunApiService();
         mockedAxios.create.mockReturnValue(mockedAxios);
         // Reset dos mocks entre os testes
         jest.clearAllMocks();

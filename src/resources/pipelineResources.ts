@@ -1,6 +1,6 @@
-import { ResourceTemplate } from '@modelcontextprotocol/sdk';
-import { PiperunApiService } from '../services/piperunApi';
-import { Logger } from '../utils/logger';
+import { ResourceTemplate } from '../adapters/mcp-sdk.adapter.js';
+import { PiperunApiService } from '../services/piperunApi.js';
+import { Logger } from '../utils/logger.js';
 
 const piperunApi = new PiperunApiService();
 const logger = new Logger('PipelineResources');

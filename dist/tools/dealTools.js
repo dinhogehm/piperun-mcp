@@ -1,30 +1,27 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.dealTools = void 0;
-const zod_1 = require("zod");
-const piperunApi_1 = require("../services/piperunApi");
-const piperunApi = new piperunApi_1.PiperunApiService();
+import { z } from 'zod';
+import { PiperunApiService } from '../services/piperunApi.js';
+const piperunApi = new PiperunApiService();
 // Esquema para atualização de negócio
-const updateDealSchema = zod_1.z.object({
-    title: zod_1.z.string().optional(),
-    value: zod_1.z.number().optional(),
-    stage_id: zod_1.z.number().optional(),
-    person_id: zod_1.z.number().optional(),
-    user_id: zod_1.z.number().optional(),
+const updateDealSchema = z.object({
+    title: z.string().optional(),
+    value: z.number().optional(),
+    stage_id: z.number().optional(),
+    person_id: z.number().optional(),
+    user_id: z.number().optional(),
 });
 // Esquema para pesquisa de negócios
-const searchDealsSchema = zod_1.z.object({
-    page: zod_1.z.number().default(1),
-    show: zod_1.z.number().default(10),
-    person_id: zod_1.z.number().optional(),
-    title: zod_1.z.string().optional(),
-    pipeline_id: zod_1.z.number().optional(),
-    stage_id: zod_1.z.number().optional(),
+const searchDealsSchema = z.object({
+    page: z.number().default(1),
+    show: z.number().default(10),
+    person_id: z.number().optional(),
+    title: z.string().optional(),
+    pipeline_id: z.number().optional(),
+    stage_id: z.number().optional(),
 });
 /**
  * Ferramentas relacionadas a negócios (deals) no Piperun
  */
-exports.dealTools = {
+export const dealTools = {
     // Ferramenta para listar negócios
     listDeals: {
         name: 'listar-negocios',
@@ -59,8 +56,8 @@ exports.dealTools = {
     // Ferramenta para obter detalhes de um negócio
     getDealDetails: {
         name: 'detalhes-negocio',
-        schema: zod_1.z.object({
-            deal_id: zod_1.z.number()
+        schema: z.object({
+            deal_id: z.number()
         }),
         handler: async ({ deal_id }) => {
             try {
@@ -92,8 +89,8 @@ exports.dealTools = {
     // Ferramenta para atualizar um negócio
     updateDeal: {
         name: 'atualizar-negocio',
-        schema: zod_1.z.object({
-            deal_id: zod_1.z.number(),
+        schema: z.object({
+            deal_id: z.number(),
             data: updateDealSchema
         }),
         handler: async ({ deal_id, data }) => {

@@ -1,98 +1,261 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-// Importações do MCP SDK adaptadas para a estrutura ESM
-const sdk_1 = require("@modelcontextprotocol/sdk");
-const sdk_2 = require("@modelcontextprotocol/sdk");
-const sdk_3 = require("@modelcontextprotocol/sdk");
-const env_1 = require("./config/env");
-const logger_1 = require("./utils/logger");
-// Importação das ferramentas
-const dealTools_1 = require("./tools/dealTools");
-const pipelineTools_1 = require("./tools/pipelineTools");
-const productTools_1 = require("./tools/productTools");
-const contactTools_1 = require("./tools/contactTools");
-const statsTools_1 = require("./tools/statsTools");
-// Importação dos recursos
-const dealResources_1 = require("./resources/dealResources");
-const pipelineResources_1 = require("./resources/pipelineResources");
-const productResources_1 = require("./resources/productResources");
-const contactResources_1 = require("./resources/contactResources");
-// Importação dos prompts
-const dealPrompts_1 = require("./prompts/dealPrompts");
-const pipelinePrompts_1 = require("./prompts/pipelinePrompts");
-const contactPrompts_1 = require("./prompts/contactPrompts");
 /**
- * Configura e inicializa o servidor MCP para o Piperun
+ * Servidor MCP para o CRM Piperun
+ *
+ * Este arquivo implementa o servidor Model Context Protocol (MCP) para integração
+ * com o CRM Piperun, permitindo acesso aos recursos e ferramentas do sistema.
+ *
+ * Usando o formato ESM para compatibilidade com o SDK do Model Context Protocol.
  */
-async function startServer() {
-    const logger = new logger_1.Logger('Server');
-    logger.info('Iniciando servidor MCP para o Piperun...');
-    // Criando uma instância do servidor MCP
-    const server = new sdk_1.McpServer({
-        name: env_1.env.MCP_SERVER_NAME,
-        version: env_1.env.MCP_SERVER_VERSION
-    });
-    // Registrando as ferramentas de negócios
-    server.tool(dealTools_1.dealTools.listDeals.name, dealTools_1.dealTools.listDeals.schema, dealTools_1.dealTools.listDeals.handler);
-    server.tool(dealTools_1.dealTools.getDealDetails.name, dealTools_1.dealTools.getDealDetails.schema, dealTools_1.dealTools.getDealDetails.handler);
-    server.tool(dealTools_1.dealTools.updateDeal.name, dealTools_1.dealTools.updateDeal.schema, dealTools_1.dealTools.updateDeal.handler);
-    // Registrando as ferramentas de funis e estágios
-    server.tool(pipelineTools_1.pipelineTools.listPipelines.name, pipelineTools_1.pipelineTools.listPipelines.schema, pipelineTools_1.pipelineTools.listPipelines.handler);
-    server.tool(pipelineTools_1.pipelineTools.listStages.name, pipelineTools_1.pipelineTools.listStages.schema, pipelineTools_1.pipelineTools.listStages.handler);
-    // Registrando as ferramentas de produtos
-    server.tool(productTools_1.productTools.listProducts.name, productTools_1.productTools.listProducts.schema, productTools_1.productTools.listProducts.handler);
-    // Registrando as ferramentas de contatos
-    server.tool(contactTools_1.contactTools.listContacts.name, contactTools_1.contactTools.listContacts.schema, contactTools_1.contactTools.listContacts.handler);
-    // Registrando as ferramentas de estatísticas e monitoramento
-    server.tool(statsTools_1.statsTools.getServerStats.name, statsTools_1.statsTools.getServerStats.schema, statsTools_1.statsTools.getServerStats.handler);
-    server.tool(statsTools_1.statsTools.checkHealth.name, statsTools_1.statsTools.checkHealth.schema, statsTools_1.statsTools.checkHealth.handler);
-    // Registrando os recursos de negócios
-    server.resource(dealResources_1.dealResources.listDeals.name, dealResources_1.dealResources.listDeals.template, dealResources_1.dealResources.listDeals.handler);
-    server.resource(dealResources_1.dealResources.getDeal.name, dealResources_1.dealResources.getDeal.template, dealResources_1.dealResources.getDeal.handler);
-    // Registrando os recursos de funis e estágios
-    server.resource(pipelineResources_1.pipelineResources.listPipelines.name, pipelineResources_1.pipelineResources.listPipelines.template, pipelineResources_1.pipelineResources.listPipelines.handler);
-    server.resource(pipelineResources_1.pipelineResources.listStages.name, pipelineResources_1.pipelineResources.listStages.template, pipelineResources_1.pipelineResources.listStages.handler);
-    // Registrando os recursos de produtos
-    server.resource(productResources_1.productResources.listProducts.name, productResources_1.productResources.listProducts.template, productResources_1.productResources.listProducts.handler);
-    // Registrando os recursos de contatos
-    server.resource(contactResources_1.contactResources.listContacts.name, contactResources_1.contactResources.listContacts.template, contactResources_1.contactResources.listContacts.handler);
-    // Registrando os prompts de negócios
-    server.prompt(dealPrompts_1.dealPrompts.analyzeDeal.name, dealPrompts_1.dealPrompts.analyzeDeal.schema, dealPrompts_1.dealPrompts.analyzeDeal.handler);
-    server.prompt(dealPrompts_1.dealPrompts.summarizeDeals.name, dealPrompts_1.dealPrompts.summarizeDeals.schema, dealPrompts_1.dealPrompts.summarizeDeals.handler);
-    // Registrando os prompts de funis
-    server.prompt(pipelinePrompts_1.pipelinePrompts.analyzePipeline.name, pipelinePrompts_1.pipelinePrompts.analyzePipeline.schema, pipelinePrompts_1.pipelinePrompts.analyzePipeline.handler);
-    server.prompt(pipelinePrompts_1.pipelinePrompts.compareStages.name, pipelinePrompts_1.pipelinePrompts.compareStages.schema, pipelinePrompts_1.pipelinePrompts.compareStages.handler);
-    // Registrando os prompts de contatos
-    server.prompt(contactPrompts_1.contactPrompts.analyzeContact.name, contactPrompts_1.contactPrompts.analyzeContact.schema, contactPrompts_1.contactPrompts.analyzeContact.handler);
-    server.prompt(contactPrompts_1.contactPrompts.identifyHighValueContacts.name, contactPrompts_1.contactPrompts.identifyHighValueContacts.schema, contactPrompts_1.contactPrompts.identifyHighValueContacts.handler);
+// Importações de dependências do projeto
+import { env } from './config/env.js';
+import { Logger } from './utils/logger.js';
+// Importação das ferramentas
+import { dealTools } from './tools/dealTools.js';
+import { pipelineTools } from './tools/pipelineTools.js';
+import { productTools } from './tools/productTools.js';
+import { contactTools } from './tools/contactTools.js';
+import { statsTools } from './tools/statsTools.js';
+// Importação dos recursos
+import { dealResources } from './resources/dealResources.js';
+import { pipelineResources } from './resources/pipelineResources.js';
+import { productResources } from './resources/productResources.js';
+import { contactResources } from './resources/contactResources.js';
+// Importação dos prompts
+import { dealPrompts } from './prompts/dealPrompts.js';
+import { pipelinePrompts } from './prompts/pipelinePrompts.js';
+import { contactPrompts } from './prompts/contactPrompts.js';
+// Importação de utilitários
+import { PromptsListSchema, ResourcesListSchema, ToolsListSchema, createMethodWithParamsSchema } from './utils/mcp-schema.util.js';
+import { adaptHandler, adaptNamedParamsHandler, adaptObjectParamsHandler } from './utils/mcp-handler.util.js';
+// Logger central do servidor
+const logger = new Logger('PiperunMCP');
+/**
+ * Inicia o servidor MCP para o Piperun
+ * Utiliza importações dinâmicas para o SDK do MCP
+ */
+async function startPiperunMcpServer() {
     try {
-        // Verificando qual transporte utilizar
-        if (process.env.MCP_TRANSPORT === 'http') {
-            // Usar transporte HTTP/SSE
-            const port = env_1.env.PORT;
-            const httpTransport = new sdk_3.HttpServerTransport({ port });
-            await server.connect(httpTransport);
-            logger.info(`Servidor MCP iniciado em HTTP na porta ${port}`);
-            logger.info(`Acesse http://localhost:${port} para interagir com o servidor`);
-            logger.info('Use a ferramenta "verificar-saude" para verificar o status do servidor');
+        logger.info('Carregando SDK do Model Context Protocol...');
+        // 1. Importações dinâmicas do SDK
+        const serverModule = await import('@modelcontextprotocol/sdk/server/index.js');
+        const stdioModule = await import('@modelcontextprotocol/sdk/server/stdio.js');
+        const sseModule = await import('@modelcontextprotocol/sdk/server/sse.js');
+        // 2. Extraímos os componentes necessários
+        const { Server } = serverModule;
+        const { StdioServerTransport } = stdioModule;
+        const { SSEServerTransport } = sseModule;
+        logger.info('SDK carregado com sucesso');
+        // 3. Configuramos o servidor
+        const server = new Server({
+            name: env.MCP_SERVER_NAME || 'piperun-mcp',
+            version: env.MCP_SERVER_VERSION || '1.0.0',
+            protocolVersion: 'v1'
+        });
+        // 4. Registramos as ferramentas como handlers de requisição
+        logger.info('Registrando ferramentas do CRM Piperun...');
+        // Handler para listar as ferramentas
+        server.setRequestHandler(ToolsListSchema, async () => {
+            logger.info('Cliente solicitou lista de ferramentas');
+            return {
+                tools: [
+                    {
+                        name: dealTools.listDeals.name,
+                        description: 'Lista os negócios do CRM Piperun',
+                        inputSchema: dealTools.listDeals.schema
+                    },
+                    {
+                        name: dealTools.getDealDetails.name,
+                        description: 'Obtém detalhes de um negócio específico',
+                        inputSchema: dealTools.getDealDetails.schema
+                    },
+                    {
+                        name: dealTools.updateDeal.name,
+                        description: 'Atualiza um negócio existente',
+                        inputSchema: dealTools.updateDeal.schema
+                    },
+                    {
+                        name: pipelineTools.listPipelines.name,
+                        description: 'Lista os funis de vendas',
+                        inputSchema: pipelineTools.listPipelines.schema
+                    },
+                    {
+                        name: pipelineTools.listStages.name,
+                        description: 'Lista os estágios de um funil',
+                        inputSchema: pipelineTools.listStages.schema
+                    },
+                    {
+                        name: productTools.listProducts.name,
+                        description: 'Lista os produtos disponíveis',
+                        inputSchema: productTools.listProducts.schema
+                    },
+                    {
+                        name: contactTools.listContacts.name,
+                        description: 'Lista os contatos cadastrados',
+                        inputSchema: contactTools.listContacts.schema
+                    },
+                    {
+                        name: statsTools.getServerStats.name,
+                        description: 'Obtém estatísticas do servidor',
+                        inputSchema: statsTools.getServerStats.schema
+                    },
+                    {
+                        name: statsTools.checkHealth.name,
+                        description: 'Verifica a saúde do servidor',
+                        inputSchema: statsTools.checkHealth.schema
+                    }
+                ]
+            };
+        });
+        // Registra recursos como handler de requisição
+        server.setRequestHandler(ResourcesListSchema, async () => {
+            logger.info('Cliente solicitou lista de recursos');
+            return {
+                resources: [
+                    {
+                        name: dealResources.listDeals.name,
+                        baseUrl: dealResources.listDeals.template.baseUrl,
+                        paths: dealResources.listDeals.template.paths
+                    },
+                    {
+                        name: dealResources.getDeal.name,
+                        baseUrl: dealResources.getDeal.template.baseUrl,
+                        paths: dealResources.getDeal.template.paths
+                    },
+                    {
+                        name: pipelineResources.listPipelines.name,
+                        baseUrl: pipelineResources.listPipelines.template.baseUrl,
+                        paths: pipelineResources.listPipelines.template.paths
+                    },
+                    {
+                        name: pipelineResources.listStages.name,
+                        baseUrl: pipelineResources.listStages.template.baseUrl,
+                        paths: pipelineResources.listStages.template.paths
+                    },
+                    {
+                        name: productResources.listProducts.name,
+                        baseUrl: productResources.listProducts.template.baseUrl,
+                        paths: productResources.listProducts.template.paths
+                    },
+                    {
+                        name: contactResources.listContacts.name,
+                        baseUrl: contactResources.listContacts.template.baseUrl,
+                        paths: contactResources.listContacts.template.paths
+                    }
+                ]
+            };
+        });
+        // Registramos os prompts
+        server.setRequestHandler(PromptsListSchema, async () => {
+            logger.info('Cliente solicitou lista de prompts');
+            return {
+                prompts: [
+                    {
+                        name: dealPrompts.analyzeDeal.name,
+                        description: 'Analisa um negócio',
+                        inputSchema: dealPrompts.analyzeDeal.schema
+                    },
+                    {
+                        name: dealPrompts.summarizeDeals.name,
+                        description: 'Resume uma lista de negócios',
+                        inputSchema: dealPrompts.summarizeDeals.schema
+                    },
+                    {
+                        name: pipelinePrompts.analyzePipeline.name,
+                        description: 'Analisa um funil de vendas',
+                        inputSchema: pipelinePrompts.analyzePipeline.schema
+                    },
+                    {
+                        name: pipelinePrompts.compareStages.name,
+                        description: 'Compara estágios de um funil',
+                        inputSchema: pipelinePrompts.compareStages.schema
+                    },
+                    {
+                        name: contactPrompts.analyzeContact.name,
+                        description: 'Analisa um contato',
+                        inputSchema: contactPrompts.analyzeContact.schema
+                    },
+                    {
+                        name: contactPrompts.identifyHighValueContacts.name,
+                        description: 'Identifica contatos de alto valor',
+                        inputSchema: contactPrompts.identifyHighValueContacts.schema
+                    }
+                ]
+            };
+        });
+        // 5. Registramos os handlers para cada ferramenta individualmente
+        logger.info('Registrando handlers para ferramentas individuais...');
+        // Deal tools
+        server.setRequestHandler(createMethodWithParamsSchema(dealTools.listDeals.name, dealTools.listDeals.schema), adaptObjectParamsHandler(dealTools.listDeals.handler));
+        server.setRequestHandler(createMethodWithParamsSchema(dealTools.getDealDetails.name, dealTools.getDealDetails.schema), adaptNamedParamsHandler(dealTools.getDealDetails.handler));
+        server.setRequestHandler(createMethodWithParamsSchema(dealTools.updateDeal.name, dealTools.updateDeal.schema), adaptNamedParamsHandler(dealTools.updateDeal.handler));
+        // Pipeline tools
+        server.setRequestHandler(createMethodWithParamsSchema(pipelineTools.listPipelines.name, pipelineTools.listPipelines.schema), adaptObjectParamsHandler(pipelineTools.listPipelines.handler));
+        server.setRequestHandler(createMethodWithParamsSchema(pipelineTools.listStages.name, pipelineTools.listStages.schema), adaptObjectParamsHandler(pipelineTools.listStages.handler));
+        // Product tools
+        server.setRequestHandler(createMethodWithParamsSchema(productTools.listProducts.name, productTools.listProducts.schema), adaptObjectParamsHandler(productTools.listProducts.handler));
+        // Contact tools
+        server.setRequestHandler(createMethodWithParamsSchema(contactTools.listContacts.name, contactTools.listContacts.schema), adaptObjectParamsHandler(contactTools.listContacts.handler));
+        // Stats tools
+        server.setRequestHandler(createMethodWithParamsSchema(statsTools.getServerStats.name, statsTools.getServerStats.schema), adaptHandler(statsTools.getServerStats.handler));
+        server.setRequestHandler(createMethodWithParamsSchema(statsTools.checkHealth.name, statsTools.checkHealth.schema), adaptHandler(statsTools.checkHealth.handler));
+        // 6. Registramos os handlers para todos os prompts
+        logger.info('Registrando handlers para prompts...');
+        // Deal prompts
+        server.setRequestHandler(createMethodWithParamsSchema(dealPrompts.analyzeDeal.name, dealPrompts.analyzeDeal.schema), adaptNamedParamsHandler(dealPrompts.analyzeDeal.handler));
+        server.setRequestHandler(createMethodWithParamsSchema(dealPrompts.summarizeDeals.name, dealPrompts.summarizeDeals.schema), adaptObjectParamsHandler(dealPrompts.summarizeDeals.handler));
+        // Pipeline prompts
+        server.setRequestHandler(createMethodWithParamsSchema(pipelinePrompts.analyzePipeline.name, pipelinePrompts.analyzePipeline.schema), adaptNamedParamsHandler(pipelinePrompts.analyzePipeline.handler));
+        server.setRequestHandler(createMethodWithParamsSchema(pipelinePrompts.compareStages.name, pipelinePrompts.compareStages.schema), adaptNamedParamsHandler(pipelinePrompts.compareStages.handler));
+        // Contact prompts
+        server.setRequestHandler(createMethodWithParamsSchema(contactPrompts.analyzeContact.name, contactPrompts.analyzeContact.schema), adaptNamedParamsHandler(contactPrompts.analyzeContact.handler));
+        server.setRequestHandler(createMethodWithParamsSchema(contactPrompts.identifyHighValueContacts.name, contactPrompts.identifyHighValueContacts.schema), adaptNamedParamsHandler(contactPrompts.identifyHighValueContacts.handler));
+        // 7. Iniciar o servidor com o transporte apropriado
+        const portStr = env.PORT || '3000';
+        const port = parseInt(String(portStr), 10);
+        // Sempre iniciar com STDIO primeiro - é o mais confiável para testes
+        logger.info('Iniciando servidor no modo STDIO...');
+        // Criar o transporte STDIO
+        const stdioTransport = new StdioServerTransport();
+        // Conectar o servidor ao transporte STDIO
+        await server.connect(stdioTransport);
+        logger.info('Servidor MCP iniciado com transporte STDIO com sucesso');
+        // Se requisitado, também iniciar o HTTP (mas manter o STDIO)
+        if (env.MCP_TRANSPORT === 'http') {
+            try {
+                logger.info(`Iniciando servidor também no modo HTTP na porta ${portStr}...`);
+                // Desabilitando temporariamente o transporte HTTP direto até resolvermos os problemas
+                // Quando implementarmos de fato, precisaremos criar um servidor HTTP
+                // e passar o objeto response correto para o SSEServerTransport
+                logger.warn('Transporte HTTP foi temporariamente desabilitado até correção');
+                // Código a ser implementado posteriormente:
+                // const http = await import('http');
+                // const server = http.createServer((req, res) => {
+                //   if (req.url?.startsWith('/mcp')) {
+                //     const httpTransport = new SSEServerTransport('/mcp', res);
+                //     server.connect(httpTransport);
+                //   }
+                // });
+                // server.listen(port);
+                logger.info(`Para utilizar HTTP, será necessário implementar o servidor HTTP completo`);
+            }
+            catch (error) {
+                logger.error(`Erro ao iniciar transporte HTTP: ${error instanceof Error ? error.message : String(error)}`);
+                logger.warn('Continuando apenas com o transporte STDIO');
+            }
         }
-        else {
-            // Usar transporte padrão stdio
-            const stdioTransport = new sdk_2.StdioServerTransport();
-            await server.connect(stdioTransport);
-            logger.info('Servidor MCP iniciado no modo stdio');
-            logger.info('Use a ferramenta "verificar-saude" para verificar o status do servidor');
-        }
+        logger.info('Servidor MCP pronto para atender solicitações!');
+        return server;
     }
     catch (error) {
-        logger.error('Erro ao iniciar o servidor MCP', error);
-        process.exit(1);
+        logger.error(`Erro ao iniciar o servidor MCP: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
     }
 }
-// Iniciar o servidor
-startServer().catch(error => {
-    const logger = new logger_1.Logger('Server');
-    logger.error('Erro fatal ao iniciar o servidor MCP', error);
+// Executa o servidor quando executado diretamente
+startPiperunMcpServer().catch((error) => {
+    logger.error(`Erro fatal ao iniciar o servidor: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
 });
+// Exporta a função principal para uso em outros módulos
+export { startPiperunMcpServer };
 //# sourceMappingURL=index.js.map

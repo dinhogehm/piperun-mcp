@@ -1,23 +1,16 @@
-"use strict";
 /**
  * Este é um exemplo de demonstração do servidor MCP do Piperun
  * Implementa uma versão completa do servidor para fins de produção
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MCPDemoServer = void 0;
-exports.startDemo = startDemo;
-const env_1 = require("../config/env");
-const logger_1 = require("../utils/logger");
-const dealTools_1 = require("../tools/dealTools");
-const pipelineTools_1 = require("../tools/pipelineTools");
-const productTools_1 = require("../tools/productTools");
-const contactTools_1 = require("../tools/contactTools");
-const statsTools_1 = require("../tools/statsTools");
-const http_1 = __importDefault(require("http"));
-const logger = new logger_1.Logger('MCPDemo');
+import { env } from '../config/env.js';
+import { Logger } from '../utils/logger.js';
+import { dealTools } from '../tools/dealTools.js';
+import { pipelineTools } from '../tools/pipelineTools.js';
+import { productTools } from '../tools/productTools.js';
+import { contactTools } from '../tools/contactTools.js';
+import { statsTools } from '../tools/statsTools.js';
+import http from 'http';
+const logger = new Logger('MCPDemo');
 // Simulando o servidor MCP para produção
 class MCPDemoServer {
     constructor(options) {
@@ -69,7 +62,7 @@ class MCPDemoServer {
     async start(port) {
         return new Promise((resolve, reject) => {
             try {
-                this.server = http_1.default.createServer(async (req, res) => {
+                this.server = http.createServer(async (req, res) => {
                     // Definir cabeçalhos CORS
                     res.setHeader('Access-Control-Allow-Origin', '*');
                     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -96,7 +89,7 @@ class MCPDemoServer {
                         // API de verificação de saúde
                         if (url.pathname === '/health') {
                             try {
-                                const result = await statsTools_1.statsTools.checkHealth.handler();
+                                const result = await statsTools.checkHealth.handler();
                                 res.writeHead(200, { 'Content-Type': 'application/json' });
                                 res.end(JSON.stringify(result));
                             }
@@ -109,7 +102,7 @@ class MCPDemoServer {
                         // API de estatísticas
                         if (url.pathname === '/stats') {
                             try {
-                                const result = await statsTools_1.statsTools.getServerStats.handler();
+                                const result = await statsTools.getServerStats.handler();
                                 res.writeHead(200, { 'Content-Type': 'application/json' });
                                 res.end(JSON.stringify(result));
                             }
@@ -194,40 +187,39 @@ class MCPDemoServer {
         }
     }
 }
-exports.MCPDemoServer = MCPDemoServer;
 // Função principal para iniciar o servidor
 async function startDemo() {
     try {
         // Criar instância do servidor MCP
         const demoServer = new MCPDemoServer({
-            name: env_1.env.MCP_SERVER_NAME,
-            version: env_1.env.MCP_SERVER_VERSION
+            name: env.MCP_SERVER_NAME,
+            version: env.MCP_SERVER_VERSION
         });
         // Registrar ferramentas de negócios
-        demoServer.registerTool(dealTools_1.dealTools.listDeals.name, dealTools_1.dealTools.listDeals.schema, dealTools_1.dealTools.listDeals.handler);
-        demoServer.registerTool(dealTools_1.dealTools.getDealDetails.name, dealTools_1.dealTools.getDealDetails.schema, dealTools_1.dealTools.getDealDetails.handler);
-        demoServer.registerTool(dealTools_1.dealTools.updateDeal.name, dealTools_1.dealTools.updateDeal.schema, dealTools_1.dealTools.updateDeal.handler);
+        demoServer.registerTool(dealTools.listDeals.name, dealTools.listDeals.schema, dealTools.listDeals.handler);
+        demoServer.registerTool(dealTools.getDealDetails.name, dealTools.getDealDetails.schema, dealTools.getDealDetails.handler);
+        demoServer.registerTool(dealTools.updateDeal.name, dealTools.updateDeal.schema, dealTools.updateDeal.handler);
         // Registrar ferramentas de funis e estágios
-        demoServer.registerTool(pipelineTools_1.pipelineTools.listPipelines.name, pipelineTools_1.pipelineTools.listPipelines.schema, pipelineTools_1.pipelineTools.listPipelines.handler);
-        demoServer.registerTool(pipelineTools_1.pipelineTools.listStages.name, pipelineTools_1.pipelineTools.listStages.schema, pipelineTools_1.pipelineTools.listStages.handler);
+        demoServer.registerTool(pipelineTools.listPipelines.name, pipelineTools.listPipelines.schema, pipelineTools.listPipelines.handler);
+        demoServer.registerTool(pipelineTools.listStages.name, pipelineTools.listStages.schema, pipelineTools.listStages.handler);
         // Registrar ferramentas de produtos
-        demoServer.registerTool(productTools_1.productTools.listProducts.name, productTools_1.productTools.listProducts.schema, productTools_1.productTools.listProducts.handler);
+        demoServer.registerTool(productTools.listProducts.name, productTools.listProducts.schema, productTools.listProducts.handler);
         // Registrar ferramentas de contatos
-        demoServer.registerTool(contactTools_1.contactTools.listContacts.name, contactTools_1.contactTools.listContacts.schema, contactTools_1.contactTools.listContacts.handler);
+        demoServer.registerTool(contactTools.listContacts.name, contactTools.listContacts.schema, contactTools.listContacts.handler);
         // Registrar ferramentas de estatísticas
-        demoServer.registerTool(statsTools_1.statsTools.getServerStats.name, statsTools_1.statsTools.getServerStats.schema, statsTools_1.statsTools.getServerStats.handler);
-        demoServer.registerTool(statsTools_1.statsTools.checkHealth.name, statsTools_1.statsTools.checkHealth.schema, statsTools_1.statsTools.checkHealth.handler);
+        demoServer.registerTool(statsTools.getServerStats.name, statsTools.getServerStats.schema, statsTools.getServerStats.handler);
+        demoServer.registerTool(statsTools.checkHealth.name, statsTools.checkHealth.schema, statsTools.checkHealth.handler);
         // Iniciar o servidor na porta configurada
-        await demoServer.start(env_1.env.PORT);
+        await demoServer.start(env.PORT);
         logger.info('=== INSTRUÇÕES DE USO ===');
-        logger.info(`1. Servidor base: http://localhost:${env_1.env.PORT}`);
-        logger.info(`2. Documentação: http://localhost:${env_1.env.PORT}/docs`);
-        logger.info(`3. Verificação de saúde: http://localhost:${env_1.env.PORT}/health`);
-        logger.info(`4. Estatísticas: http://localhost:${env_1.env.PORT}/stats`);
+        logger.info(`1. Servidor base: http://localhost:${env.PORT}`);
+        logger.info(`2. Documentação: http://localhost:${env.PORT}/docs`);
+        logger.info(`3. Verificação de saúde: http://localhost:${env.PORT}/health`);
+        logger.info(`4. Estatísticas: http://localhost:${env.PORT}/stats`);
         logger.info(`5. Ferramentas disponíveis:`);
         // Listar todas as ferramentas registradas
         Array.from(demoServer.tools.keys()).forEach(tool => {
-            logger.info(`   - http://localhost:${env_1.env.PORT}/tools/${tool}`);
+            logger.info(`   - http://localhost:${env.PORT}/tools/${tool}`);
         });
         // Capture sinais para encerramento limpo
         process.on('SIGINT', () => {
@@ -242,7 +234,13 @@ async function startDemo() {
     }
 }
 // Executar o servidor
-if (require.main === module) {
-    startDemo();
+// Verificação de módulo principal em CommonJS
+const isMainModule = require.main === module;
+if (isMainModule) {
+    startDemo().catch((error) => {
+        logger.error(`Erro ao iniciar o servidor: ${error.message}`);
+        process.exit(1);
+    });
 }
+export { MCPDemoServer, startDemo };
 //# sourceMappingURL=mcp-demo.js.map

@@ -14,6 +14,7 @@ const envSchema = z.object({
   MCP_SERVER_NAME: z.string().default('PiperunMCP'),
   MCP_SERVER_VERSION: z.string().default('1.0.0'),
   PORT: z.coerce.number().default(3000),
+  MCP_TRANSPORT: z.enum(['stdio', 'http']).default('stdio'),
 });
 
 // Valida e exporta as variáveis de ambiente
@@ -23,4 +24,5 @@ export const env = envSchema.parse({
   MCP_SERVER_NAME: process.env.MCP_SERVER_NAME,
   MCP_SERVER_VERSION: process.env.MCP_SERVER_VERSION,
   PORT: process.env.PORT,
+  MCP_TRANSPORT: process.env.MCP_TRANSPORT,
 });

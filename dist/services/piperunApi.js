@@ -1,16 +1,10 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.PiperunApiService = void 0;
-const axios_1 = __importDefault(require("axios"));
-const env_1 = require("../config/env");
-const logger_1 = require("../utils/logger");
-const telemetry_1 = require("../utils/telemetry");
+import axios from 'axios';
+import { env } from '../config/env.js';
+import { Logger } from '../utils/logger.js';
+import { Telemetry } from '../utils/telemetry.js';
 // Cliente HTTP para a API do Piperun
-const api = axios_1.default.create({
-    baseURL: env_1.env.PIPERUN_API_URL,
+const api = axios.create({
+    baseURL: env.PIPERUN_API_URL,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -24,17 +18,17 @@ api.interceptors.request.use(config => {
     }
     // Adicionar o token como parâmetro na URL usando o parâmetro correto "token"
     const separator = config.url?.includes('?') ? '&' : '?';
-    config.url = `${config.url}${separator}token=${env_1.env.PIPERUN_API_KEY}`;
+    config.url = `${config.url}${separator}token=${env.PIPERUN_API_KEY}`;
     return config;
 });
 /**
  * Serviço para interagir com a API do Piperun
  * Implementa uma interface padronizada para todas as operações da API
  */
-class PiperunApiService {
+export class PiperunApiService {
     constructor() {
-        this.logger = new logger_1.Logger('PiperunApiService');
-        this.telemetry = new telemetry_1.Telemetry('PiperunAPI');
+        this.logger = new Logger('PiperunApiService');
+        this.telemetry = new Telemetry('PiperunAPI');
         this.apiStats = {
             totalOperations: 0,
             successfulOperations: 0,
@@ -207,5 +201,4 @@ class PiperunApiService {
             ((stats.averageDuration * (stats.count - 1)) + duration) / stats.count;
     }
 }
-exports.PiperunApiService = PiperunApiService;
 //# sourceMappingURL=piperunApi.js.map

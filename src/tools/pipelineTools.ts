@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PiperunApiService } from '../services/piperunApi';
+import { PiperunApiService } from '../services/piperunApi.js';
 
 const piperunApi = new PiperunApiService();
 

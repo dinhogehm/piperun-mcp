@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { PiperunApiService } from '../services/piperunApi';
-import { Logger } from '../utils/logger';
+import { PiperunApiService } from '../services/piperunApi.js';
+import { Logger } from '../utils/logger.js';
 
 const piperunApi = new PiperunApiService();
 const logger = new Logger('StatsTools');

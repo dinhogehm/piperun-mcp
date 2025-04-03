@@ -1,10 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const dealResources_1 = require("../resources/dealResources");
-const piperunApi_1 = require("../services/piperunApi");
+import { expect, describe, jest } from '@jest/globals';
+import { dealResources } from '../resources/dealResources.js';
+import { PiperunApiService } from '../services/piperunApi.js';
 // Mock do serviço PiperunApiService
 jest.mock('../services/piperunApi');
-const MockedPiperunApiService = piperunApi_1.PiperunApiService;
+const MockedPiperunApiService = PiperunApiService;
 describe('dealResources', () => {
     let mockPiperunApi;
     beforeEach(() => {
@@ -38,7 +37,7 @@ describe('dealResources', () => {
             // Mock da URL
             const uri = new URL('piperun://negocios/lista?page=2&show=5');
             // Chamar o handler do recurso
-            const result = await dealResources_1.dealResources.listDeals.handler(uri, { page: '2', show: '5' });
+            const result = await dealResources.listDeals.handler(uri, { page: '2', show: '5' });
             // Verificar que a API foi chamada com os parâmetros corretos
             expect(mockPiperunApi.listDeals).toHaveBeenCalledWith({
                 page: 2,
@@ -69,7 +68,7 @@ describe('dealResources', () => {
             // Mock da URL sem parâmetros
             const uri = new URL('piperun://negocios/lista');
             // Chamar o handler do recurso
-            await dealResources_1.dealResources.listDeals.handler(uri, {});
+            await dealResources.listDeals.handler(uri, {});
             // Verificar que a API foi chamada com os valores padrão
             expect(mockPiperunApi.listDeals).toHaveBeenCalledWith({
                 page: 1,
@@ -83,7 +82,7 @@ describe('dealResources', () => {
             // Mock da URL
             const uri = new URL('piperun://negocios/lista');
             // Chamar o handler do recurso
-            const result = await dealResources_1.dealResources.listDeals.handler(uri, {});
+            const result = await dealResources.listDeals.handler(uri, {});
             // Verificar que o resultado contém a mensagem de erro
             expect(result).toHaveProperty('contents');
             expect(result.contents).toHaveLength(1);
@@ -106,7 +105,7 @@ describe('dealResources', () => {
             // Mock da URL com ID do negócio
             const uri = new URL('piperun://negocios/42');
             // Chamar o handler do recurso
-            const result = await dealResources_1.dealResources.getDeal.handler(uri, { dealId: '42' });
+            const result = await dealResources.getDeal.handler(uri, { dealId: '42' });
             // Verificar que a API foi chamada com o ID correto
             expect(mockPiperunApi.getDeal).toHaveBeenCalledWith(42);
             // Verificar que o resultado foi formatado corretamente
@@ -124,7 +123,7 @@ describe('dealResources', () => {
             // Mock da URL
             const uri = new URL('piperun://negocios/999');
             // Chamar o handler do recurso
-            const result = await dealResources_1.dealResources.getDeal.handler(uri, { dealId: '999' });
+            const result = await dealResources.getDeal.handler(uri, { dealId: '999' });
             // Verificar que o resultado contém a mensagem de erro
             expect(result).toHaveProperty('contents');
             expect(result.contents).toHaveLength(1);

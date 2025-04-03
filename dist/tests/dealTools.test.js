@@ -1,10 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const dealTools_1 = require("../tools/dealTools");
-const piperunApi_1 = require("../services/piperunApi");
+import { dealTools } from '../tools/dealTools.js';
+import { PiperunApiService } from '../services/piperunApi.js';
 // Mock do serviço PiperunApiService
 jest.mock('../services/piperunApi');
-const MockedPiperunApiService = piperunApi_1.PiperunApiService;
+const MockedPiperunApiService = PiperunApiService;
 describe('dealTools', () => {
     let mockPiperunApi;
     beforeEach(() => {
@@ -19,7 +17,7 @@ describe('dealTools', () => {
     });
     describe('listDeals', () => {
         it('deve validar os parâmetros corretamente', () => {
-            const schema = dealTools_1.dealTools.listDeals.schema;
+            const schema = dealTools.listDeals.schema;
             // Validação com parâmetros válidos
             expect(() => schema.parse({ page: 1, show: 10 })).not.toThrow();
             // Validação com parâmetros inválidos
@@ -44,7 +42,7 @@ describe('dealTools', () => {
             };
             mockPiperunApi.listDeals.mockResolvedValue(mockDealData);
             // Chamar o handler da ferramenta
-            const result = await dealTools_1.dealTools.listDeals.handler({ page: 1, show: 10 });
+            const result = await dealTools.listDeals.handler({ page: 1, show: 10 });
             // Verificar que a API foi chamada com os parâmetros corretos
             expect(mockPiperunApi.listDeals).toHaveBeenCalledWith({ page: 1, show: 10 });
             // Verificar que o resultado foi formatado corretamente
@@ -61,7 +59,7 @@ describe('dealTools', () => {
             const errorMessage = 'Erro na API';
             mockPiperunApi.listDeals.mockRejectedValue(new Error(errorMessage));
             // Chamar o handler da ferramenta
-            const result = await dealTools_1.dealTools.listDeals.handler({ page: 1, show: 10 });
+            const result = await dealTools.listDeals.handler({ page: 1, show: 10 });
             // Verificar que o resultado contém a mensagem de erro
             expect(result).toHaveProperty('content');
             expect(result.content).toHaveLength(1);
@@ -82,7 +80,7 @@ describe('dealTools', () => {
             };
             mockPiperunApi.getDeal.mockResolvedValue(mockDeal);
             // Chamar o handler da ferramenta
-            const result = await dealTools_1.dealTools.getDealDetails.handler({ deal_id: 1 });
+            const result = await dealTools.getDealDetails.handler({ deal_id: 1 });
             // Verificar que a API foi chamada com os parâmetros corretos
             expect(mockPiperunApi.getDeal).toHaveBeenCalledWith(1);
             // Verificar que o resultado foi formatado corretamente
@@ -109,7 +107,7 @@ describe('dealTools', () => {
             };
             mockPiperunApi.updateDeal.mockResolvedValue(mockUpdatedDeal);
             // Chamar o handler da ferramenta
-            const result = await dealTools_1.dealTools.updateDeal.handler({
+            const result = await dealTools.updateDeal.handler({
                 deal_id: dealId,
                 data: updateData
             });

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { dealTools } from '../tools/dealTools';
-import { PiperunApiService } from '../services/piperunApi';
+import { dealTools } from '../tools/dealTools.js';
+import { PiperunApiService } from '../services/piperunApi.js';
 
 // Mock do serviço PiperunApiService
 jest.mock('../services/piperunApi');

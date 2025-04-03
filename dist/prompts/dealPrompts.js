@@ -1,16 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.dealPrompts = void 0;
-const zod_1 = require("zod");
+import { z } from 'zod';
 /**
  * Prompts relacionados a negócios (deals) no Piperun
  */
-exports.dealPrompts = {
+export const dealPrompts = {
     // Prompt para analisar negócio
     analyzeDeal: {
         name: 'analisar-negocio',
-        schema: zod_1.z.object({
-            dealId: zod_1.z.number()
+        schema: z.object({
+            dealId: z.number()
         }),
         handler: ({ dealId }) => ({
             messages: [
@@ -36,11 +33,11 @@ Use os recursos do Piperun para buscar todas as informações relevantes.`
     // Prompt para resumir negócios
     summarizeDeals: {
         name: 'resumir-negocios',
-        schema: zod_1.z.object({
-            pipelineId: zod_1.z.number().optional(),
-            stageId: zod_1.z.number().optional(),
-            page: zod_1.z.number().default(1),
-            show: zod_1.z.number().default(10)
+        schema: z.object({
+            pipelineId: z.number().optional(),
+            stageId: z.number().optional(),
+            page: z.number().default(1),
+            show: z.number().default(10)
         }),
         handler: ({ pipelineId, stageId, page, show }) => {
             let promptText = `Por favor, gere um resumo dos negócios atuais`;

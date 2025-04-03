@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Telemetry = void 0;
-const logger_1 = require("./logger");
+import { Logger } from './logger.js';
 /**
  * Classe para monitoramento e telemetria do servidor MCP
  *
@@ -10,7 +7,7 @@ const logger_1 = require("./logger");
  * - Registrar métricas de desempenho
  * - Coletar estatísticas de uso
  */
-class Telemetry {
+export class Telemetry {
     /**
      * Cria uma instância da classe de telemetria
      * @param context Contexto para o logger
@@ -19,7 +16,7 @@ class Telemetry {
     constructor(context, maxMetrics = 1000) {
         this.metrics = [];
         this.activeOperations = new Map();
-        this.logger = new logger_1.Logger(`Telemetry:${context}`);
+        this.logger = new Logger(`Telemetry:${context}`);
         this.maxMetrics = maxMetrics;
     }
     /**
@@ -168,5 +165,4 @@ class Telemetry {
         };
     }
 }
-exports.Telemetry = Telemetry;
 //# sourceMappingURL=telemetry.js.map

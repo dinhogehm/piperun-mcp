@@ -1,16 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.contactPrompts = void 0;
-const zod_1 = require("zod");
+import { z } from 'zod';
 /**
  * Prompts relacionados a contatos (people) no Piperun
  */
-exports.contactPrompts = {
+export const contactPrompts = {
     // Prompt para analisar contato
     analyzeContact: {
         name: 'analisar-contato',
-        schema: zod_1.z.object({
-            contactId: zod_1.z.number()
+        schema: z.object({
+            contactId: z.number()
         }),
         handler: ({ contactId }) => ({
             messages: [
@@ -37,10 +34,10 @@ Use os recursos e ferramentas do Piperun para buscar todas as informações rele
     // Prompt para identificar contatos de alto valor
     identifyHighValueContacts: {
         name: 'identificar-contatos-alto-valor',
-        schema: zod_1.z.object({
-            minDealValue: zod_1.z.number().default(10000),
-            page: zod_1.z.number().default(1),
-            show: zod_1.z.number().default(10)
+        schema: z.object({
+            minDealValue: z.number().default(10000),
+            page: z.number().default(1),
+            show: z.number().default(10)
         }),
         handler: ({ minDealValue, page, show }) => ({
             messages: [

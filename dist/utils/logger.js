@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Logger = void 0;
 /**
  * Utilitário para logs padronizados
  *
  * Implementa um logger simples e consistente para o servidor MCP
  */
-class Logger {
+export class Logger {
     /**
      * Cria uma instância do logger
      * @param context Contexto do logger (geralmente o nome da classe ou módulo)
@@ -81,5 +78,4 @@ class Logger {
         }
     }
 }
-exports.Logger = Logger;
 //# sourceMappingURL=logger.js.map

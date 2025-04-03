@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { env } from '../config/env';
-import { Logger } from '../utils/logger';
-import { Telemetry } from '../utils/telemetry';
+import { env } from '../config/env.js';
+import { Logger } from '../utils/logger.js';
+import { Telemetry } from '../utils/telemetry.js';
 
 // Cliente HTTP para a API do Piperun
 const api = axios.create({

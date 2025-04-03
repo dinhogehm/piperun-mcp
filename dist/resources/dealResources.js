@@ -1,19 +1,16 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.dealResources = void 0;
-const sdk_1 = require("@modelcontextprotocol/sdk");
-const piperunApi_1 = require("../services/piperunApi");
-const logger_1 = require("../utils/logger");
-const piperunApi = new piperunApi_1.PiperunApiService();
-const logger = new logger_1.Logger('DealResources');
+import { ResourceTemplate } from '../adapters/mcp-sdk.adapter.js';
+import { PiperunApiService } from '../services/piperunApi.js';
+import { Logger } from '../utils/logger.js';
+const piperunApi = new PiperunApiService();
+const logger = new Logger('DealResources');
 /**
  * Recursos relacionados a negócios (deals) no Piperun
  */
-exports.dealResources = {
+export const dealResources = {
     // Recurso para listar negócios
     listDeals: {
         name: 'negocios',
-        template: new sdk_1.ResourceTemplate('piperun://negocios', {
+        template: new ResourceTemplate('piperun://negocios', {
             list: 'piperun://negocios/lista?page={page}&show={show}'
         }),
         handler: async (uri, params) => {
@@ -50,7 +47,7 @@ exports.dealResources = {
     // Recurso para obter detalhes de um negócio específico
     getDeal: {
         name: 'negocio',
-        template: new sdk_1.ResourceTemplate('piperun://negocios/{dealId}', { list: undefined }),
+        template: new ResourceTemplate('piperun://negocios/{dealId}', { list: undefined }),
         handler: async (uri, params) => {
             const dealId = parseInt(params.dealId, 10);
             try {

@@ -4,4 +4,5 @@ export declare const env: {
     MCP_SERVER_NAME: string;
     MCP_SERVER_VERSION: string;
     PORT: number;
+    MCP_TRANSPORT: "stdio" | "http";
 };

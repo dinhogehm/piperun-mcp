@@ -3,14 +3,15 @@
  * Implementa uma versão completa do servidor para fins de produção
  */
 
-import { env } from '../config/env';
-import { Logger } from '../utils/logger';
-import { dealTools } from '../tools/dealTools';
-import { pipelineTools } from '../tools/pipelineTools';
-import { productTools } from '../tools/productTools';
-import { contactTools } from '../tools/contactTools';
-import { statsTools } from '../tools/statsTools';
+import { env } from '../config/env.js';
+import { Logger } from '../utils/logger.js';
+import { dealTools } from '../tools/dealTools.js';
+import { pipelineTools } from '../tools/pipelineTools.js';
+import { productTools } from '../tools/productTools.js';
+import { contactTools } from '../tools/contactTools.js';
+import { statsTools } from '../tools/statsTools.js';
 import http from 'http';
+import { fileURLToPath } from 'url';
 
 const logger = new Logger('MCPDemo');
 
@@ -313,15 +314,20 @@ async function startDemo() {
       process.exit(0);
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Erro ao iniciar o servidor MCP', error);
     process.exit(1);
   }
 }
 
 // Executar o servidor
-if (require.main === module) {
-  startDemo();
+// Verificação de módulo principal em CommonJS
+const isMainModule = require.main === module;
+if (isMainModule) {
+  startDemo().catch((error: any) => {
+    logger.error(`Erro ao iniciar o servidor: ${error.message}`);
+    process.exit(1);
+  });
 }
 
 export { MCPDemoServer, startDemo };
