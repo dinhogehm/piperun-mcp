@@ -1,0 +1,19 @@
+{
+  // Configuração MCP para o servidor Piperun
+  "schema_version": "v1",
+  "name": "piperun-mcp",
+  "description": "Serviço que fornece acesso à API do CRM Piperun, incluindo negócios, pipelines, etapas, produtos e contatos.",
+  "version": "1.0.0",
+  "contact": "Osvaldo Gehm",
+  "auth": {
+    "type": "api_key",
+    "api_key": {
+      "in": "env",
+      "name": "PIPERUN_API_KEY"
+    }
+  },
+  "metadata": {
+    "system_requirements": "Node.js >= 16.0.0",
+    "documentation_url": "https://github.com/dinhogehm/piperun-mcp"
+  }
+}

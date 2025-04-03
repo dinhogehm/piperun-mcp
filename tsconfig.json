@@ -5,12 +5,11 @@
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "strict": true,
-    "outDir": "dist",
-    "declaration": true,
-    "sourceMap": true,
-    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "declaration": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

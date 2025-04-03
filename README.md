@@ -1,300 +1,226 @@
-# Claude Code MCP
+# Piperun MCP
 
-Claude Code MCP is an implementation of [Claude Code](https://gist.github.com/transitive-bullshit/487c9cb52c75a9701d312334ed53b20c) as a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server. This project allows you to use Claude Code's powerful software engineering capabilities through the standardized MCP interface.
+Este é um servidor MCP (Model Context Protocol) para interação com a API do CRM Piperun. O servidor disponibiliza diversas ferramentas que facilitam a consulta de informações no Piperun através de uma interface padronizada para modelos de linguagem.
 
-## What is Claude Code?
+O projeto suporta duas modalidades de uso:
+1. **Servidor MCP local via stdio** (padrão) - para integração direta com assistentes de IA
+2. **Servidor HTTP RESTful** - para uso remoto e integração com outras aplicações
 
-Claude Code is Anthropic's CLI tool for software engineering tasks, powered by Claude. It provides a set of tools and capabilities that help developers with:
+## Funcionalidades
 
-- Code generation and editing
-- Code review and analysis
-- Debugging and troubleshooting
-- File system operations
-- Shell command execution
-- Project exploration and understanding
+O servidor MCP fornece as seguintes ferramentas para interagir com a API do Piperun:
 
-The original implementation is available as a JavaScript module that defines prompts and tools for interacting with Claude's API.
+- **list_deals**: Lista negócios com opções de filtragem e paginação
+  - Suporta filtragem por pipeline, etapa, contato, título e status
+  
+- **list_pipelines**: Lista os pipelines disponíveis no Piperun
 
-## What is MCP?
+- **list_stages**: Lista as etapas de um pipeline específico
+  - Requer o ID do pipeline para listar suas etapas
 
-The Model Context Protocol (MCP) is a standardized interface for AI models that enables consistent interaction patterns across different models and providers. MCP defines:
+- **list_products**: Lista os produtos disponíveis
+  - Suporta filtragem por nome
 
-- **Tools**: Functions that models can call to perform actions
-- **Resources**: External data that models can access
-- **Prompts**: Predefined conversation templates
+- **list_contacts**: Lista os contatos cadastrados
+  - Suporta filtragem por nome e email
 
-By implementing Claude Code as an MCP server, we make its capabilities available to any MCP-compatible client, allowing for greater interoperability and flexibility.
+- **check_status**: Verifica se a API do Piperun está ativa e respondendo
 
-## Features
+## Pré-requisitos
 
-- Full implementation of Claude Code functionality as an MCP server
-- Provides tools for file operations, shell commands, and code analysis
-- Exposes resources for accessing file system and environment information
-- Includes prompts for general CLI interaction and code review
-- Compatible with any MCP client
-- TypeScript implementation with full type safety
+- Node.js (versão 16 ou superior)
+- NPM ou Yarn
+- Uma conta no Piperun com acesso à API
+- Token de API do Piperun
 
-## Installation
+## Configuração
+
+1. Clone este repositório:
+   ```bash
+   git clone https://github.com/seu-usuario/piperun-mcp.git
+   cd piperun-mcp
+   ```
+
+2. Instale as dependências:
+   ```bash
+   npm install
+   # ou
+   yarn install
+   ```
+
+3. Crie um arquivo `.env` na raiz do projeto baseado no arquivo `.env.example`:
+   ```bash
+   cp src/.env.example .env
+   ```
+
+4. Edite o arquivo `.env` e adicione sua chave de API do Piperun:
+   ```
+   PIPERUN_API_KEY=sua_chave_de_api_aqui
+   ```
+
+## Executando o servidor
+
+### Modo MCP (stdio)
+
+Para iniciar o servidor MCP no modo stdio para integração direta com ferramentas de IA:
 
 ```bash
-# Clone the repository
-git clone https://github.com/auchenberg/claude-code-mcp.git
-cd claude-code-mcp
-
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-```
-
-## Usage
-
-### Running as a standalone server
-
-```bash
-# Start the server
 npm start
+# ou
+yarn start
 ```
 
-### Using with MCP clients
+O servidor iniciará e ficará aguardando comandos via stdin/stdout.
 
-Claude Code MCP can be used with any MCP client. Here's an example of how to connect to it using the MCP TypeScript SDK:
+### Modo HTTP (RESTful API)
 
-```typescript
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-
-const transport = new StdioClientTransport({
-  command: "node",
-  args: ["dist/index.js"]
-});
-
-const client = new Client(
-  {
-    name: "example-client",
-    version: "1.0.0"
-  },
-  {
-    capabilities: {
-      prompts: {},
-      resources: {},
-      tools: {}
-    }
-  }
-);
-
-await client.connect(transport);
-
-// Use Claude Code through MCP
-const result = await client.callTool({
-  name: "bash",
-  arguments: {
-    command: "ls -la"
-  }
-});
-
-console.log(result);
-```
-
-## Available Tools
-
-Claude Code MCP provides the following tools:
-
-- **bash**: Execute shell commands with security restrictions and timeout options
-- **readFile**: Read files from the filesystem with options for line offsets and limits
-- **listFiles**: List files and directories with detailed metadata
-- **searchGlob**: Search for files matching a glob pattern
-- **grep**: Search for text in files with regex pattern support
-- **think**: A no-op tool for thinking through complex problems
-- **codeReview**: Analyze and review code for bugs, security issues, and best practices
-- **editFile**: Create or edit files with specified content
-
-### Tool Details
-
-#### bash
-
-```typescript
-{
-  command: string;  // The shell command to execute
-  timeout?: number; // Optional timeout in milliseconds (max 600000)
-}
-```
-
-The bash tool includes security restrictions that prevent execution of potentially dangerous commands like `curl`, `wget`, and others.
-
-#### readFile
-
-```typescript
-{
-  file_path: string; // The absolute path to the file to read
-  offset?: number;   // The line number to start reading from
-  limit?: number;    // The number of lines to read
-}
-```
-
-#### searchGlob
-
-```typescript
-{
-  pattern: string;  // The glob pattern to match files against
-  path?: string;    // The directory to search in (defaults to current working directory)
-}
-```
-
-#### grep
-
-```typescript
-{
-  pattern: string;   // The regular expression pattern to search for
-  path?: string;     // The directory to search in (defaults to current working directory)
-  include?: string;  // File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")
-}
-```
-
-## Available Resources
-
-- **file**: Access file contents (`file://{path}`)
-  - Provides direct access to file contents with proper error handling
-  - Returns the full text content of the specified file
-
-- **directory**: List directory contents (`dir://{path}`)
-  - Returns a JSON array of file information objects
-  - Each object includes name, path, isDirectory, size, and modified date
-
-- **environment**: Get system environment information (`env://info`)
-  - Returns information about the system environment
-  - Includes Node.js version, npm version, OS info, and environment variables
-
-## Available Prompts
-
-- **generalCLI**: General CLI prompt for Claude Code
-  - Provides a comprehensive system prompt for Claude to act as a CLI tool
-  - Includes guidelines for tone, style, proactiveness, and following conventions
-  - Automatically includes environment details
-
-- **codeReview**: Prompt for reviewing code
-  - Specialized prompt for code review tasks
-  - Analyzes code for bugs, security vulnerabilities, performance issues, and best practices
-
-- **prReview**: Prompt for reviewing pull requests
-  - Specialized prompt for PR review tasks
-  - Analyzes PR changes and provides comprehensive feedback
-
-- **initCodebase**: Initialize a new CLAUDE.md file with codebase documentation
-  - Creates documentation for build/lint/test commands and code style guidelines
-  - Useful for setting up a new project with Claude Code
-
-## Development
+Para iniciar o servidor no modo HTTP, permitindo o acesso remoto via API REST:
 
 ```bash
-# Run in development mode with auto-reload
-npm run dev
+npm run start:server
+# ou
+yarn start:server
 ```
 
-## Architecture
+O servidor iniciará na porta 3000 (ou na porta definida na variável de ambiente PORT).
 
-Claude Code MCP is built with a modular architecture:
+## Integração com ferramentas de IA
+
+### Uso Direto (Local)
+
+Este servidor MCP pode ser integrado com várias ferramentas de IA que suportam o protocolo MCP, como:
+
+- Claude Desktop
+- Ferramentas baseadas em MCPHost
+- Outros clientes compatíveis com MCP
+
+### Uso Remoto
+
+Para usar o serviço remotamente, você tem várias opções:
+
+#### Opção 1: MCPHost
+
+A maneira mais fácil é usar o [MCPHost](https://github.com/llmkde/mcphost), uma ferramenta para hospedar servidores MCP remotamente:
+
+```bash
+# Instale o MCPHost
+npm install -g @llmkde/mcphost
+
+# Hospede seu servidor MCP
+mcphost serve --name piperun-mcp --path /caminho/para/piperun-mcp --command "npm start"
+```
+
+Isso fornecerá um endpoint HTTP que pode ser acessado remotamente.
+
+#### Opção 2: Expor o servidor HTTP com Ngrok
+
+```bash
+# Inicie o servidor HTTP
+npm run start:server
+
+# Em outro terminal, execute o Ngrok
+ngrok http 3000
+```
+
+#### Opção 3: Deploy em Serviços de Hospedagem
+
+O serviço pode ser hospedado em plataformas como:
+- [Render.com](https://render.com)
+- [Railway.app](https://railway.app)
+- [Heroku](https://heroku.com)
+
+#### Opção 4: Conteneirização com Docker
+
+Um arquivo `Dockerfile` está disponível para criar um container Docker do serviço.
+
+## Estrutura do projeto
 
 ```
-claude-code-mcp/
+piperun-mcp/
 ├── src/
-│   ├── server/
-│   │   ├── claude-code-server.ts  # Main server setup
-│   │   ├── tools.ts               # Tool implementations
-│   │   ├── prompts.ts             # Prompt definitions
-│   │   └── resources.ts           # Resource implementations
-│   ├── utils/
-│   │   ├── bash.ts                # Shell command utilities
-│   │   └── file.ts                # File system utilities
-│   └── index.ts                   # Entry point
-├── package.json
-├── tsconfig.json
-└── README.md
+│   ├── config/      # Configurações do servidor e da API
+│   ├── services/    # Serviços para comunicação com a API do Piperun
+│   ├── tools/       # Ferramentas MCP disponibilizadas pelo servidor
+│   ├── types/       # Definições de tipos TypeScript
+│   └── utils/       # Funções utilitárias
+├── .env             # Variáveis de ambiente (não versionado)
+├── .env.example     # Exemplo de variáveis de ambiente
+├── package.json     # Dependências e scripts
+├── tsconfig.json    # Configuração do TypeScript
+├── smithery.yaml    # Configuração para integração com Smithery.ai
+└── Dockerfile       # Configuração para criação de container Docker (opcional)
 ```
 
-The implementation follows these key principles:
+## Exemplo de consultas
 
-1. **Modularity**: Each component (tools, prompts, resources) is implemented in a separate module
-2. **Type Safety**: Full TypeScript type definitions for all components
-3. **Error Handling**: Comprehensive error handling for all operations
-4. **Security**: Security restrictions for potentially dangerous operations
+### Modo MCP (via stdio)
 
-## Implementation Details
+#### Listar pipelines disponíveis
 
-### MCP Server Setup
-
-The main server is set up in `claude-code-server.ts`:
-
-```typescript
-export async function setupClaudeCodeServer(server: McpServer): Promise<void> {
-  // Set up Claude Code tools
-  setupTools(server);
-  
-  // Set up Claude Code prompts
-  setupPrompts(server);
-  
-  // Set up Claude Code resources
-  setupResources(server);
-}
+```
+list_pipelines
 ```
 
-### Tool Implementation
+#### Listar negócios de um pipeline específico
 
-Tools are implemented using the MCP SDK's tool registration method:
-
-```typescript
-server.tool(
-  "toolName",
-  "Tool description",
-  {
-    // Zod schema for tool arguments
-    param1: z.string().describe("Parameter description"),
-    param2: z.number().optional().describe("Optional parameter description")
-  },
-  async ({ param1, param2 }) => {
-    // Tool implementation
-    return {
-      content: [{ type: "text", text: "Result" }]
-    };
-  }
-);
+```
+list_deals { "pipeline_id": 123 }
 ```
 
-### Resource Implementation
+#### Listar etapas de um pipeline
 
-Resources are implemented using the MCP SDK's resource registration method:
-
-```typescript
-server.resource(
-  "resourceName",
-  new ResourceTemplate("resource://{variable}", { list: undefined }),
-  async (uri, variables) => {
-    // Resource implementation
-    return {
-      contents: [{
-        uri: uri.href,
-        text: "Resource content"
-      }]
-    };
-  }
-);
+```
+list_stages { "pipeline_id": 123 }
 ```
 
-## License
+#### Verificar status da API
+
+```
+check_status
+```
+
+### Modo HTTP (via REST API)
+
+#### Listar pipelines disponíveis
+
+```bash
+curl http://localhost:3000/api/pipelines
+```
+
+#### Listar negócios de um pipeline específico
+
+```bash
+curl http://localhost:3000/api/deals?pipeline_id=123
+```
+
+#### Listar etapas de um pipeline
+
+```bash
+curl http://localhost:3000/api/stages?pipeline_id=123
+```
+
+#### Verificar status da API
+
+```bash
+curl http://localhost:3000/api/status
+```
+
+## Configuração Smithery.ai
+
+O projeto inclui um arquivo `smithery.yaml` que permite a integração com o [Smithery.ai](https://smithery.ai). Esta configuração facilita a descoberta e uso das ferramentas MCP por assistentes de IA e outras ferramentas compatíveis.
+
+## Uso com Docker (Opcional)
+
+Se você instalou o Docker, pode construir e executar o projeto em um container:
+
+```bash
+# Construir a imagem
+docker build -t piperun-mcp .
+
+# Executar o container (modo HTTP)
+docker run -p 3000:3000 -e PIPERUN_API_KEY=sua_chave_api piperun-mcp
+```
+
+## Licença
 
 MIT
-
-## Acknowledgements
-
-- [Claude Code](https://gist.github.com/transitive-bullshit/487c9cb52c75a9701d312334ed53b20c) by Anthropic
-- [Model Context Protocol](https://modelcontextprotocol.io)
-- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Disclaimer
-
-This project is not officially affiliated with Anthropic. Claude Code is a product of Anthropic, and this project is an independent implementation of Claude Code as an MCP server.
