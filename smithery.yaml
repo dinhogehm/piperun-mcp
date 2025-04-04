@@ -1,14 +1,78 @@
-# Configuração do Smithery para o PipeRun MCP
+name: piperun-mcp
+description: Uma integração da API PipeRun com o Model Context Protocol (MCP) que fornece ferramentas para consultar negociações, pipelines, estágios e produtos.
+version: 1.0.0
+author: Osvaldo Gehm
+repository: https://github.com/dinhogehm/piperun-mcp
+license: ISC
+
+# Smithery.ai configuration
 startCommand:
   type: stdio
   configSchema:
-    type: object
-    properties: {}
-  commandFunction: |
-    function(config) {
-      return {
-        command: 'node',
-        args: ['index.js'],
-        env: { PORT: '3000' }
-      };
-    }
+    # JSON Schema definindo as opções de configuração para o MCP.
+    {}
+  commandFunction: |-
+    (config) => ({
+      "command": "node",
+      "args": [
+        "--no-warnings",
+        "index.js"
+      ]
+    })
+  
+tools:
+  - name: listDeals
+    description: Lista negociações com opções de filtro e paginação
+    parameters:
+      - name: page
+        type: number
+        description: Número da página para paginação (começa em 1)
+        optional: true
+      - name: show
+        type: number
+        description: Quantidade de registros por página
+        optional: true
+      - name: person_id
+        type: string
+        description: ID da pessoa para filtrar negociações
+        optional: true
+
+  - name: listPipelines
+    description: Lista pipelines com opções de paginação
+    parameters:
+      - name: page
+        type: number
+        description: Número da página para paginação (começa em 1)
+        optional: true
+      - name: show
+        type: number
+        description: Quantidade de registros por página
+        optional: true
+
+  - name: listStages
+    description: Lista estágios com opções de filtro e paginação
+    parameters:
+      - name: page
+        type: number
+        description: Número da página para paginação (começa em 1)
+        optional: true
+      - name: show
+        type: number
+        description: Quantidade de registros por página
+        optional: true
+      - name: pipeline_id
+        type: string
+        description: ID do pipeline para filtrar estágios
+        optional: true
+
+  - name: listProducts
+    description: Lista produtos com opções de paginação
+    parameters:
+      - name: page
+        type: number
+        description: Número da página para paginação (começa em 1)
+        optional: true
+      - name: show
+        type: number
+        description: Quantidade de registros por página
+        optional: true
