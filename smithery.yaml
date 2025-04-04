@@ -1,28 +1,14 @@
-# Configuração do Smithery para o servidor MCP PipeRun
-
-schemaVersion: "1.0"
-projectName: "piperun-mcp"
-description: "Integração do PipeRun com Model Context Protocol"
-
-# Configuração do servidor
-server:
-  type: "node"
-  engine: "node"
-  entrypoint: "index.js"
-  port: 3000
-  environment:
-    - name: "PORT"
-      value: "3000"
-
-# Configuração de build
-build:
-  command: "npm install"
-
-# Definição do MCP
-mcp:
-  version: "1.0"
-  protocolEndpoints:
-    - path: "/tools/list"
-      method: "POST"
-    - path: "/tools/execute"
-      method: "POST"
+# Configuração do Smithery para o PipeRun MCP
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+  commandFunction: |
+    function(config) {
+      return {
+        command: 'node',
+        args: ['index.js'],
+        env: { PORT: '3000' }
+      };
+    }
